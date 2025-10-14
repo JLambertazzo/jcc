@@ -1,26 +1,40 @@
 #!/bin/bash
 
+USAGE_STR="Usage: jcc [-h | --help][-S][--lex | --parse | --codegen] path/to/code.c"
+
 # Parse cli options
 OUTPUT_ASSEMBLY=0
 
-vars=$(getopt -o S -l "lex,parse,codegen" -- "$@")
+if ! vars=$(getopt -o Sh -l "lex,parse,codegen,help" -- "$@"); then
+  exit 1
+fi
 for var in $vars
 do
   case "$var" in
     "-S")
       OUTPUT_ASSEMBLY=1
+      shift
+      ;;
+    "-h" | "--help")
+      echo $USAGE_STR
+      exit 1
       ;;
     "--") # marks end of opts. break from loop
       break
       ;;
     *)
       echo Valid option $var is not yet handled
+      shift
       ;;
   esac
 done
 
 # Driver implementation for "Writing a C Compiler by Nora Sandler".
 # Must accept as single argument - a path to a c source file in $1
+if [ -z $1 ]; then
+  echo $USAGE_STR
+  exit 1
+fi
 
 INPUT_FILE=$1
 BASE_PATH=$(echo $INPUT_FILE | sed -E 's/\.\w*$//')

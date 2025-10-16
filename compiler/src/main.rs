@@ -15,7 +15,7 @@ struct Cli {
 
 fn main() {
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
-    let next_token_pattern = Regex::new(r"^.*\b").unwrap();
+    let next_token_pattern = Regex::new(r"^\w*\b").unwrap();
 
     let cli = Cli::parse();
     let mut contents =
@@ -27,10 +27,14 @@ fn main() {
             contents.drain(mat.range());
         } else {
             // get entire token
-            let mat = next_token_pattern.find(&contents).unwrap();
-            let token: String = contents.drain(mat.range()).collect();
+            let mat = next_token_pattern.find(&contents);
+            let rng = match mat {
+                Some(val) => val.range(),
+                // contents not empty and first char is a boundary. Get the boundary
+                None => 0..1,
+            };
             // decice what to do with token
+            let _token: String = contents.drain(rng).collect();
         }
     }
-    println!("Hello, world! {:?}", cli.lex);
 }

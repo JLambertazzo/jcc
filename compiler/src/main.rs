@@ -13,6 +13,7 @@ struct Cli {
     filepath: String,
 }
 
+#[derive(Debug, PartialEq)]
 enum TokenType {
     Identifier,
     Constant,
@@ -24,12 +25,13 @@ enum TokenType {
     Semicolon,
 }
 
+#[derive(Debug, PartialEq)]
 struct Token {
     token_type: TokenType,
     content: String,
 }
 
-fn classify_token(token_content: &String) -> Token {
+fn classify_token(token_content: &str) -> Token {
     /*
      * Given regex patterns for each token type.
      * Any other value you encounter at this point should be handled by exact match
@@ -39,7 +41,7 @@ fn classify_token(token_content: &String) -> Token {
     let constant_rgx = Regex::new(r"^[0-9]+\b$").unwrap();
     let keyword_rgx = Regex::new(r"^(int|void|return)$").unwrap();
 
-    let content_copy: String = token_content.into();
+    let content_copy: String = token_content.to_string();
 
     if keyword_rgx.is_match(token_content) {
         return Token {
@@ -57,7 +59,7 @@ fn classify_token(token_content: &String) -> Token {
             content: content_copy,
         };
     } else {
-        let found_type: Option<TokenType> = match &*token_content.as_str() {
+        let found_type: Option<TokenType> = match token_content {
             "(" => Some(TokenType::OpenParenthesis),
             ")" => Some(TokenType::CloseParenthesis),
             "{" => Some(TokenType::OpenBrace),
@@ -106,4 +108,77 @@ fn main() {
     let contents =
         fs::read_to_string(cli.filepath).expect("Should have been able to read the file");
     lex_contents(&contents);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_classification() {
+        macro_rules! test_classification {
+            ($raw_content:literal, $expected_token_type:expr) => {
+                assert_eq!(
+                    classify_token($raw_content),
+                    Token {
+                        token_type: $expected_token_type,
+                        content: $raw_content.to_string()
+                    }
+                );
+            };
+        }
+
+        test_classification!("int", TokenType::Keyword);
+        test_classification!("main", TokenType::Identifier);
+        test_classification!("2", TokenType::Constant);
+        test_classification!("(", TokenType::OpenParenthesis);
+        test_classification!(")", TokenType::CloseParenthesis);
+        test_classification!("{", TokenType::OpenBrace);
+        test_classification!("}", TokenType::CloseBrace);
+        test_classification!(";", TokenType::Semicolon);
+    }
+
+    #[test]
+    #[should_panic]
+    fn panic_for_bad_variable() {
+        classify_token("123bar");
+    }
+
+    #[test]
+    fn lex_simple_program() {
+        macro_rules! tok {
+            ($raw_content:literal, $token_type:expr) => {
+                Token {
+                    token_type: $token_type,
+                    content: $raw_content.to_string(),
+                }
+            };
+        }
+        let result = lex_contents(
+            &"
+
+                int main() {
+                    return 2;
+                }
+
+                
+            "
+            .to_string(),
+        );
+
+        assert_eq!(
+            result,
+            Vec::from([
+                tok!("int", TokenType::Keyword),
+                tok!("main", TokenType::Identifier),
+                tok!("(", TokenType::OpenParenthesis),
+                tok!(")", TokenType::CloseParenthesis),
+                tok!("{", TokenType::OpenBrace),
+                tok!("return", TokenType::Keyword),
+                tok!("2", TokenType::Constant),
+                tok!(";", TokenType::Semicolon),
+                tok!("}", TokenType::CloseBrace),
+            ])
+        )
+    }
 }

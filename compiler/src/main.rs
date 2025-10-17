@@ -1,7 +1,6 @@
 use clap::Parser;
 use regex::Regex;
 use std::fs;
-use std::vec;
 
 #[derive(Parser)]
 struct Cli {
@@ -40,12 +39,41 @@ fn classify_token(token_content: &String) -> Token {
     let constant_rgx = Regex::new(r"^[0-9]+\b$").unwrap();
     let keyword_rgx = Regex::new(r"^(int|void|return)$").unwrap();
 
-    // TODO
-    return match (token_content) {};
+    let content_copy: String = token_content.into();
+
+    if keyword_rgx.is_match(token_content) {
+        return Token {
+            token_type: TokenType::Keyword,
+            content: content_copy,
+        };
+    } else if constant_rgx.is_match(token_content) {
+        return Token {
+            token_type: TokenType::Constant,
+            content: content_copy,
+        };
+    } else if identifier_rgx.is_match(token_content) {
+        return Token {
+            token_type: TokenType::Identifier,
+            content: content_copy,
+        };
+    } else {
+        let found_type: Option<TokenType> = match &*token_content.as_str() {
+            "(" => Some(TokenType::OpenParenthesis),
+            ")" => Some(TokenType::CloseParenthesis),
+            "{" => Some(TokenType::OpenBrace),
+            "}" => Some(TokenType::CloseBrace),
+            ";" => Some(TokenType::Semicolon),
+            _ => None,
+        };
+        return Token {
+            token_type: found_type.unwrap(),
+            content: content_copy,
+        };
+    }
 }
 
 fn lex_contents(src_contents: &String) -> Vec<Token> {
-    let tokens = Vec::new();
+    let mut tokens = Vec::new();
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
     let next_token_pattern = Regex::new(r"^\w*\b").unwrap();
 
@@ -65,7 +93,9 @@ fn lex_contents(src_contents: &String) -> Vec<Token> {
                 None => 0..1,
             };
             // decice what to do with token
-            let _token: String = contents.drain(rng).collect();
+            let token: String = contents.drain(rng).collect();
+            let classified_token = classify_token(&token);
+            tokens.push(classified_token);
         }
     }
     return tokens;

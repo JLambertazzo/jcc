@@ -20,5 +20,6 @@ fn main() {
     let contents =
         fs::read_to_string(cli.filepath).expect("Should have been able to read the file");
     let tokens = lexer::lex_contents(&contents);
-    parser::parse(tokens);
+    let assembly = parser::parse(tokens);
+    fs::write("test.s", assembly).unwrap();
 }

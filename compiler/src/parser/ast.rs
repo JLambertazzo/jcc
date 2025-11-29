@@ -1,84 +1,66 @@
 use super::Parser;
 use crate::lexer::*;
 
-#[derive(Debug, PartialEq)]
-pub struct Constant {
-    value: i32,
+#[derive(PartialEq, Debug)]
+pub enum Expression {
+    Constant(i32),
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Identifier {
-    name: String,
-}
-#[derive(Debug, PartialEq)]
-pub struct Expression {
-    int: Constant,
-}
-#[derive(Debug, PartialEq)]
-pub struct Statement {
-    expr: Expression,
-}
-#[derive(Debug, PartialEq)]
-pub struct Function {
-    ident: Identifier,
-    statement: Statement,
-}
-#[derive(Debug, PartialEq)]
-pub struct Program {
-    func: Function,
-}
-
-fn parse_constant(parser: &mut Parser) -> Constant {
+fn parse_constant(parser: &mut Parser) -> Expression {
     let constant_tok = parser.eat();
     assert_eq!(constant_tok.token_type, TokenType::Constant);
 
     let str_content = constant_tok.content.as_str();
     let i32_val = str_content.parse::<i32>().unwrap();
-    Constant { value: i32_val }
+    Expression::Constant(i32_val)
 }
 
 fn parse_expression(parser: &mut Parser) -> Expression {
-    Expression {
-        int: parse_constant(parser),
-    }
+    parse_constant(parser)
 }
 
-fn parse_identifier(parser: &mut Parser) -> Identifier {
-    let identifier_tok = parser.eat();
-    assert_eq!(identifier_tok.token_type, TokenType::Identifier);
-
-    Identifier {
-        name: identifier_tok.content.to_string(),
-    }
+#[derive(PartialEq, Debug)]
+pub enum Statement {
+    Return(Expression),
 }
 
-fn parse_statement(parser: &mut Parser) -> Statement {
+fn parse_return(parser: &mut Parser) -> Statement {
     assert_eq!(parser.eat().content, "return");
     let expr = parse_expression(parser);
     assert_eq!(parser.eat().content, ";");
 
-    Statement { expr: expr }
+    Statement::Return(expr)
+}
+
+fn parse_statement(parser: &mut Parser) -> Statement {
+    parse_return(parser)
+}
+
+#[derive(PartialEq, Debug)]
+pub enum Function {
+    Function(String, Statement),
 }
 
 fn parse_function(parser: &mut Parser) -> Function {
     assert_eq!(parser.eat().content, "int");
-    let ident = parse_identifier(parser);
+    let name_tok = parser.eat();
+    assert_eq!(name_tok.token_type, TokenType::Identifier);
     assert_eq!(parser.eat().content, "(");
     assert_eq!(parser.eat().content, ")");
     assert_eq!(parser.eat().content, "{");
     let statement = parse_statement(parser);
     assert_eq!(parser.eat().content, "}");
 
-    Function {
-        ident: ident,
-        statement: statement,
-    }
+    Function::Function(name_tok.content, statement)
+}
+
+#[derive(PartialEq, Debug)]
+pub enum Program {
+    Program(Function),
 }
 
 pub fn parse_program(parser: &mut Parser) -> Program {
-    Program {
-        func: parse_function(parser),
-    }
+    Program::Program(parse_function(parser))
 }
 
 #[cfg(test)]
@@ -99,18 +81,7 @@ mod tests {
         let const_token = tok!("1234", TokenType::Constant);
         assert_eq!(
             parse_constant(&mut Parser::new(vec![const_token])),
-            Constant { value: 1234 }
-        );
-    }
-
-    #[test]
-    fn test_parse_identifier() {
-        let ident_token = tok!("function_name", TokenType::Identifier);
-        assert_eq!(
-            parse_identifier(&mut Parser::new(vec![ident_token])),
-            Identifier {
-                name: String::from("function_name")
-            }
+            Expression::Constant(1234)
         );
     }
 
@@ -119,9 +90,7 @@ mod tests {
         let const_token = tok!("1234", TokenType::Constant);
         assert_eq!(
             parse_expression(&mut Parser::new(vec![const_token])),
-            Expression {
-                int: Constant { value: 1234 }
-            }
+            Expression::Constant(1234)
         );
     }
 
@@ -134,11 +103,7 @@ mod tests {
         ];
         assert_eq!(
             parse_statement(&mut Parser::new(statement_as_vector)),
-            Statement {
-                expr: Expression {
-                    int: Constant { value: 2 }
-                }
-            }
+            Statement::Return(Expression::Constant(2))
         )
     }
 
@@ -157,16 +122,10 @@ mod tests {
         ];
         assert_eq!(
             parse_function(&mut Parser::new(function_token_vector)),
-            Function {
-                ident: Identifier {
-                    name: "function_name".to_string()
-                },
-                statement: Statement {
-                    expr: Expression {
-                        int: Constant { value: 2 }
-                    }
-                }
-            }
+            Function::Function(
+                "function_name".to_string(),
+                Statement::Return(Expression::Constant(2))
+            )
         )
     }
 
@@ -185,18 +144,10 @@ mod tests {
         ];
         assert_eq!(
             parse_program(&mut Parser::new(program_token_vector)),
-            Program {
-                func: Function {
-                    ident: Identifier {
-                        name: "function_name".to_string()
-                    },
-                    statement: Statement {
-                        expr: Expression {
-                            int: Constant { value: 2 }
-                        }
-                    }
-                }
-            }
+            Program::Program(Function::Function(
+                "function_name".to_string(),
+                Statement::Return(Expression::Constant(2))
+            ))
         )
     }
 }

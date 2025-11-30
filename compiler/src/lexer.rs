@@ -61,7 +61,7 @@ fn classify_token(token_content: &str) -> Token {
     }
 }
 
-pub fn lex_contents(src_contents: &String) -> Vec<Token> {
+pub fn lex_contents(src_contents: String) -> Vec<Token> {
     let mut tokens = Vec::new();
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
     let next_token_pattern = Regex::new(r"^\w*\b").unwrap();
@@ -135,7 +135,7 @@ mod tests {
             };
         }
         let result = lex_contents(
-            &"
+            "
 
                 int main() {
                     return 2;

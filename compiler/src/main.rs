@@ -1,4 +1,5 @@
 use clap::Parser;
+use regex::Regex;
 use std::fs;
 
 mod lexer;
@@ -17,9 +18,14 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    let contents =
-        fs::read_to_string(cli.filepath).expect("Should have been able to read the file");
-    let tokens = lexer::lex_contents(&contents);
+    let input_path = cli.filepath.as_str();
+    let contents = fs::read_to_string(input_path).expect("Should have been able to read the file");
+    let tokens = lexer::lex_contents(contents);
     let assembly = parser::parse(tokens);
-    fs::write("test.s", assembly).unwrap();
+    let output_path = Regex::new(r"\.i$")
+        .unwrap()
+        .replace(input_path, ".s")
+        .to_string();
+    println!("What?? {:?}", output_path);
+    fs::write(output_path, assembly).unwrap();
 }

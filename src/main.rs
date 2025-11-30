@@ -3,8 +3,8 @@ use regex::Regex;
 use std::fs;
 
 mod ast;
+mod emission;
 mod ingestion;
-mod processing;
 
 #[derive(Parser)]
 struct Cli {
@@ -23,7 +23,7 @@ fn main() {
     let contents = fs::read_to_string(input_path)
         .expect(&format!("Failed to read input file {:?}", input_path));
     let c_program = ingestion::process_program(contents);
-    let asm_output = processing::to_asm::program_as_asm(c_program);
+    let asm_output = emission::to_asm::program_as_asm(c_program);
     let output_path = Regex::new(r"\.i$")
         .unwrap()
         .replace(input_path, ".s")

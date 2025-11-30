@@ -19,7 +19,8 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
     let input_path = cli.filepath.as_str();
-    let contents = fs::read_to_string(input_path).expect("Should have been able to read the file");
+    let contents = fs::read_to_string(input_path)
+        .expect(&format!("Failed to read input file {:?}", input_path));
     let tokens = lexer::lex_contents(contents);
     let assembly = parser::parse(tokens);
     let output_path = Regex::new(r"\.i$")

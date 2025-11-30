@@ -1,4 +1,4 @@
-use crate::lexer::Token;
+use crate::ingestion::lexer::*;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -54,15 +54,15 @@ mod tests {
     fn eat_consumes_token_under_cursor() {
         let mut parser = Parser {
             tokens: vec![
-                tok!("(", crate::lexer::TokenType::OpenParenthesis),
-                tok!(")", crate::lexer::TokenType::CloseParenthesis),
+                tok!("(", TokenType::OpenParenthesis),
+                tok!(")", TokenType::CloseParenthesis),
             ],
             cursor: 0,
         };
         let first = parser.eat();
         let second = parser.eat();
-        assert_eq!(first.token_type, crate::lexer::TokenType::OpenParenthesis);
-        assert_eq!(second.token_type, crate::lexer::TokenType::CloseParenthesis);
+        assert_eq!(first.token_type, TokenType::OpenParenthesis);
+        assert_eq!(second.token_type, TokenType::CloseParenthesis);
 
         // now that we've consumed all tokens, next call should panic
         let err = catch_unwind(AssertUnwindSafe(|| parser.eat()));

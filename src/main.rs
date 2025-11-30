@@ -2,8 +2,9 @@ use clap::Parser;
 use regex::Regex;
 use std::fs;
 
-mod lexer;
-mod parser;
+mod ast;
+mod ingestion;
+mod processing;
 
 #[derive(Parser)]
 struct Cli {
@@ -21,11 +22,11 @@ fn main() {
     let input_path = cli.filepath.as_str();
     let contents = fs::read_to_string(input_path)
         .expect(&format!("Failed to read input file {:?}", input_path));
-    let tokens = lexer::lex_contents(contents);
-    let assembly = parser::parse(tokens);
+    let c_program = ingestion::process_program(contents);
+    let asm_output = processing::to_asm::program_as_asm(c_program);
     let output_path = Regex::new(r"\.i$")
         .unwrap()
         .replace(input_path, ".s")
         .to_string();
-    fs::write(output_path, assembly).unwrap();
+    fs::write(output_path, asm_output).unwrap();
 }

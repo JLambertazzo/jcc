@@ -1,4 +1,4 @@
-use super::ast::{Expression, Function, Program, Statement};
+use crate::ast::c::*;
 
 const INDENT: &str = "  ";
 

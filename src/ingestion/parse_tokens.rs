@@ -1,10 +1,6 @@
-use super::Parser;
-use crate::lexer::*;
-
-#[derive(PartialEq, Debug)]
-pub enum Expression {
-    Constant(i32),
-}
+use super::lexer::*;
+use super::parser::Parser;
+use crate::ast::c::*;
 
 fn parse_constant(parser: &mut Parser) -> Expression {
     let constant_tok = parser.eat();
@@ -19,11 +15,6 @@ fn parse_expression(parser: &mut Parser) -> Expression {
     parse_constant(parser)
 }
 
-#[derive(PartialEq, Debug)]
-pub enum Statement {
-    Return(Expression),
-}
-
 fn parse_return(parser: &mut Parser) -> Statement {
     assert_eq!(parser.eat().content, "return");
     let expr = parse_expression(parser);
@@ -34,11 +25,6 @@ fn parse_return(parser: &mut Parser) -> Statement {
 
 fn parse_statement(parser: &mut Parser) -> Statement {
     parse_return(parser)
-}
-
-#[derive(PartialEq, Debug)]
-pub enum Function {
-    Function(String, Statement),
 }
 
 fn parse_function(parser: &mut Parser) -> Function {
@@ -52,11 +38,6 @@ fn parse_function(parser: &mut Parser) -> Function {
     assert_eq!(parser.eat().content, "}");
 
     Function::Function(name_tok.content, statement)
-}
-
-#[derive(PartialEq, Debug)]
-pub enum Program {
-    Program(Function),
 }
 
 pub fn parse_program(parser: &mut Parser) -> Program {

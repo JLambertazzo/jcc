@@ -45,7 +45,10 @@ gcc -E -P $INPUT_FILE -o $PREPROC_PATH
 
 # Compile the preprocessed source code - stubbed out for now
 ASSEMBLY_PATH="${BASE_PATH}.s"
-./compiler/target/debug/compiler $PREPROC_PATH
+if [ ! -e "./target/release/compiler" ]; then
+  cargo build -r
+fi
+./target/release/compiler $PREPROC_PATH
 rm $PREPROC_PATH
 
 # If -S provided, stop after assembly output

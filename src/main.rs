@@ -26,6 +26,5 @@ fn main() {
         .unwrap()
         .replace(input_path, ".s")
         .to_string();
-    println!("What?? {:?}", output_path);
     fs::write(output_path, assembly).unwrap();
 }

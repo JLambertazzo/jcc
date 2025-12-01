@@ -12,6 +12,7 @@ Implementation of the C compiler outlined in [Writing a C Compiler](https://nost
 
 ## Project Structure
 
-* `./src/ast` defines the AST structures for C
+* `./src/ast` defines the AST structures for C and assembly
 * `./src/ingestion` turns preprocessed C into a C AST
-* `./src/emission` writes C to ASM output
+* `./src/processing` turns a C AST into an assembly AST
+* `./src/emission` transforms an assembly AST into assembly code

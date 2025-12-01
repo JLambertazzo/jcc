@@ -38,7 +38,10 @@ fn function_to_string(func: Function) -> String {
 
 pub fn asm_program_to_string(program: Program) -> String {
     match program {
-        Program::Program(func) => function_to_string(func),
+        Program::Program(func) => format!(
+            "{}\n.section .note.GNU-stack,\"\",@progbits\n",
+            function_to_string(func)
+        ),
     }
 }
 
@@ -56,7 +59,7 @@ mod tests {
                     Instruction::Ret
                 ]
             ))),
-            format!("{INDENT}.globl main\nmain:\n  movl $2, %eax\n  ret\n")
+            format!("{INDENT}.globl main\nmain:\n  movl $2, %eax\n  ret\n\n.section .note.GNU-stack,\"\",@progbits\n")
         )
     }
 }

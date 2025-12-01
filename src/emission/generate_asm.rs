@@ -41,3 +41,22 @@ pub fn asm_program_to_string(program: Program) -> String {
         Program::Program(func) => function_to_string(func),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple_asm_program_to_string() {
+        assert_eq!(
+            asm_program_to_string(Program::Program(Function::Function(
+                String::from("main"),
+                vec![
+                    Instruction::Mov(Operand::Immediate(2), Operand::Register),
+                    Instruction::Ret
+                ]
+            ))),
+            format!("{INDENT}.globl main\nmain:\n  movl $2, %eax\n  ret\n")
+        )
+    }
+}

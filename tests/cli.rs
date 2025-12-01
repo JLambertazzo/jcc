@@ -30,6 +30,16 @@ fn file_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn missing_arg() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.assert().failure().stderr(predicate::str::contains(
+        "the following required arguments were not provided",
+    ));
+
+    Ok(())
+}
+
+#[test]
 fn ch1_simple_input() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = cargo_bin_cmd!("compiler");
     cmd.arg("tests/fixtures/input/ch1_simple_input.i");

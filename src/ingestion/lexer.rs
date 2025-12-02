@@ -1,21 +1,15 @@
 use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TokenType {
-    Identifier,
-    Constant,
-    Keyword,
+pub enum Token {
+    Identifier(String),
+    Constant(String),
+    Keyword(String),
     OpenParenthesis,
     CloseParenthesis,
     OpenBrace,
     CloseBrace,
     Semicolon,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Token {
-    pub token_type: TokenType,
-    pub content: String,
 }
 
 fn classify_token(token_content: &str) -> Token {
@@ -31,33 +25,23 @@ fn classify_token(token_content: &str) -> Token {
     let content_copy: String = token_content.to_string();
 
     if keyword_rgx.is_match(token_content) {
-        return Token {
-            token_type: TokenType::Keyword,
-            content: content_copy,
-        };
+        return Token::Keyword(content_copy);
     } else if constant_rgx.is_match(token_content) {
-        return Token {
-            token_type: TokenType::Constant,
-            content: content_copy,
-        };
+        return Token::Constant(content_copy);
     } else if identifier_rgx.is_match(token_content) {
-        return Token {
-            token_type: TokenType::Identifier,
-            content: content_copy,
-        };
+        return Token::Identifier(content_copy);
     } else {
-        let found_type: Option<TokenType> = match token_content {
-            "(" => Some(TokenType::OpenParenthesis),
-            ")" => Some(TokenType::CloseParenthesis),
-            "{" => Some(TokenType::OpenBrace),
-            "}" => Some(TokenType::CloseBrace),
-            ";" => Some(TokenType::Semicolon),
+        match token_content {
+            "(" => Some(Token::OpenParenthesis),
+            ")" => Some(Token::CloseParenthesis),
+            "{" => Some(Token::OpenBrace),
+            "}" => Some(Token::CloseBrace),
+            ";" => Some(Token::Semicolon),
             _ => None,
-        };
-        return Token {
-            token_type: found_type.unwrap(),
-            content: content_copy,
-        };
+        }
+        .expect(&format!(
+            "{token_content} should be one of the known lexical token types"
+        ))
     }
 }
 
@@ -98,24 +82,18 @@ mod tests {
     fn test_classification() {
         macro_rules! test_classification {
             ($raw_content:literal, $expected_token_type:expr) => {
-                assert_eq!(
-                    classify_token($raw_content),
-                    Token {
-                        token_type: $expected_token_type,
-                        content: $raw_content.to_string()
-                    }
-                );
+                assert_eq!(classify_token($raw_content), $expected_token_type);
             };
         }
 
-        test_classification!("int", TokenType::Keyword);
-        test_classification!("main", TokenType::Identifier);
-        test_classification!("2", TokenType::Constant);
-        test_classification!("(", TokenType::OpenParenthesis);
-        test_classification!(")", TokenType::CloseParenthesis);
-        test_classification!("{", TokenType::OpenBrace);
-        test_classification!("}", TokenType::CloseBrace);
-        test_classification!(";", TokenType::Semicolon);
+        test_classification!("int", Token::Keyword("int".to_string()));
+        test_classification!("main", Token::Identifier("main".to_string()));
+        test_classification!("2", Token::Constant("2".to_string()));
+        test_classification!("(", Token::OpenParenthesis);
+        test_classification!(")", Token::CloseParenthesis);
+        test_classification!("{", Token::OpenBrace);
+        test_classification!("}", Token::CloseBrace);
+        test_classification!(";", Token::Semicolon);
     }
 
     #[test]
@@ -126,14 +104,6 @@ mod tests {
 
     #[test]
     fn lex_simple_program() {
-        macro_rules! tok {
-            ($raw_content:literal, $token_type:expr) => {
-                Token {
-                    token_type: $token_type,
-                    content: $raw_content.to_string(),
-                }
-            };
-        }
         let result = lex_contents(
             "
 
@@ -149,15 +119,15 @@ mod tests {
         assert_eq!(
             result,
             Vec::from([
-                tok!("int", TokenType::Keyword),
-                tok!("main", TokenType::Identifier),
-                tok!("(", TokenType::OpenParenthesis),
-                tok!(")", TokenType::CloseParenthesis),
-                tok!("{", TokenType::OpenBrace),
-                tok!("return", TokenType::Keyword),
-                tok!("2", TokenType::Constant),
-                tok!(";", TokenType::Semicolon),
-                tok!("}", TokenType::CloseBrace),
+                Token::Keyword("int".to_string()),
+                Token::Identifier("main".to_string()),
+                Token::OpenParenthesis,
+                Token::CloseParenthesis,
+                Token::OpenBrace,
+                Token::Keyword("return".to_string()),
+                Token::Constant("2".to_string()),
+                Token::Semicolon,
+                Token::CloseBrace,
             ])
         )
     }

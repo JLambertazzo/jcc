@@ -21,7 +21,7 @@ fn parse_expression(parser: &mut Parser) -> Expression {
 }
 
 fn parse_return(parser: &mut Parser) -> Statement {
-    assert_eq!(parser.eat(), Token::Keyword(String::from("return")));
+    assert_eq!(parser.eat(), Token::Keyword(Keyword::Return));
     let expr = parse_expression(parser);
     assert_eq!(parser.eat(), Token::Semicolon);
 
@@ -33,7 +33,7 @@ fn parse_statement(parser: &mut Parser) -> Statement {
 }
 
 fn parse_function(parser: &mut Parser) -> Function {
-    assert_eq!(parser.eat(), Token::Keyword("int".to_string()));
+    assert_eq!(parser.eat(), Token::Keyword(Keyword::Int));
     let name_tok = parser.eat();
     let name = match name_tok {
         Token::Identifier(name) => Ok(name),
@@ -60,12 +60,12 @@ mod tests {
     #[test]
     fn test_parse_program() {
         let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
+            Token::Keyword(Keyword::Int),
             Token::Identifier(String::from("function_name")),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(String::from("return")),
+            Token::Keyword(Keyword::Return),
             Token::Constant(String::from("2")),
             Token::Semicolon,
             Token::CloseBrace,

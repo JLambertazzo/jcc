@@ -1,10 +1,25 @@
 use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum Keyword {
+    Return,
+    Int,
+}
+
+fn lex_keyword(input: String) -> Keyword {
+    match input.as_str() {
+        "return" => Some(Keyword::Return),
+        "int" => Some(Keyword::Int),
+        _ => None,
+    }
+    .expect(&format!("{input} should be a known keyword"))
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
     Constant(String),
-    Keyword(String),
+    Keyword(Keyword),
     OpenParenthesis,
     CloseParenthesis,
     OpenBrace,
@@ -25,7 +40,7 @@ fn classify_token(token_content: &str) -> Token {
     let content_copy: String = token_content.to_string();
 
     if keyword_rgx.is_match(token_content) {
-        return Token::Keyword(content_copy);
+        return Token::Keyword(lex_keyword(content_copy));
     } else if constant_rgx.is_match(token_content) {
         return Token::Constant(content_copy);
     } else if identifier_rgx.is_match(token_content) {
@@ -86,7 +101,7 @@ mod tests {
             };
         }
 
-        test_classification!("int", Token::Keyword("int".to_string()));
+        test_classification!("int", Token::Keyword(Keyword::Int));
         test_classification!("main", Token::Identifier("main".to_string()));
         test_classification!("2", Token::Constant("2".to_string()));
         test_classification!("(", Token::OpenParenthesis);
@@ -119,12 +134,12 @@ mod tests {
         assert_eq!(
             result,
             Vec::from([
-                Token::Keyword("int".to_string()),
+                Token::Keyword(Keyword::Int),
                 Token::Identifier("main".to_string()),
                 Token::OpenParenthesis,
                 Token::CloseParenthesis,
                 Token::OpenBrace,
-                Token::Keyword("return".to_string()),
+                Token::Keyword(Keyword::Return),
                 Token::Constant("2".to_string()),
                 Token::Semicolon,
                 Token::CloseBrace,

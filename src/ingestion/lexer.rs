@@ -68,22 +68,23 @@ pub fn lex_contents(src_contents: String) -> Vec<Token> {
     let mut contents: String = src_contents.clone();
 
     while !contents.is_empty() {
-        if starting_whitespace_pattern.is_match(&contents) {
-            // trim starting whitespace
-            let mat = starting_whitespace_pattern.find(&contents).unwrap();
-            contents.drain(mat.range());
-        } else {
-            // get entire token
-            let mat = next_token_pattern.find(&contents);
-            let rng = match mat {
-                Some(val) => val.range(),
-                // contents not empty and first char is a boundary. Get the boundary
-                None => 0..1,
-            };
-            // decice what to do with token
-            let token: String = contents.drain(rng).collect();
-            let classified_token = classify_token(&token);
-            tokens.push(classified_token);
+        match starting_whitespace_pattern.find(&contents) {
+            Some(mat) => {
+                contents.drain(mat.range());
+            }
+            None => {
+                // get entire token
+                let mat = next_token_pattern.find(&contents);
+                let rng = match mat {
+                    Some(val) => val.range(),
+                    // contents not empty and first char is a boundary. Get the boundary
+                    None => 0..1,
+                };
+                // decice what to do with token
+                let token: String = contents.drain(rng).collect();
+                let classified_token = classify_token(&token);
+                tokens.push(classified_token);
+            }
         }
     }
     return tokens;

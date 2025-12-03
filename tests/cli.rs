@@ -30,6 +30,14 @@ fn file_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+#[should_panic = "Expected Keyword(Int) but found None"]
+fn empty_file() {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/empty_file.i");
+    cmd.assert().success();
+}
+
+#[test]
 fn missing_arg() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = cargo_bin_cmd!("compiler");
     cmd.assert().failure().stderr(predicate::str::contains(
@@ -47,4 +55,28 @@ fn ch1_simple_input() -> Result<(), Box<dyn std::error::Error>> {
     expect_match_fixture!("ch1_simple_input.s");
 
     Ok(())
+}
+
+#[test]
+#[should_panic = "123bar should be one of the known lexical token types"]
+fn ch1_bad_input_invalid_token() {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/ch1_bad_input_invalid_token.i");
+    cmd.assert().success();
+}
+
+#[test]
+#[should_panic = "Expected Semicolon but found OpenBrace"]
+fn ch1_bad_input_unexpected_token_kind() {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/ch1_bad_input_unexpected_token_kind.i");
+    cmd.assert().success();
+}
+
+#[test]
+#[should_panic = "Expected Keyword(Int) but found Keyword(Return)"]
+fn ch1_bad_input_unexpected_keyword() {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/ch1_bad_input_unexpected_keyword.i");
+    cmd.assert().success();
 }

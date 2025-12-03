@@ -11,34 +11,31 @@ impl Parser {
     }
 
     /**
-     * Consume the token under the current cursor. Assumes a token is present.
-     * Will panic if no token is found.
+     * Tries to consume a token. Returns None if no token could be extracted
      */
-    pub fn eat(&mut self) -> Token {
-        let token = self
-            .tokens
-            .get(self.cursor)
-            .expect("Expected a Token")
-            .clone();
-        self.cursor += 1;
-
-        token
+    pub fn eat(&mut self) -> Option<Token> {
+        match self.tokens.get(self.cursor) {
+            Some(token) => {
+                self.cursor += 1;
+                Some(token.clone())
+            }
+            None => None,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::panic::{catch_unwind, AssertUnwindSafe};
 
     #[test]
-    #[should_panic]
+    #[should_panic = "custom expectation error message"]
     fn panic_on_no_token() {
         let mut parser = Parser {
             tokens: vec![],
             cursor: 0,
         };
-        parser.eat();
+        parser.eat().expect("custom expectation error message");
     }
 
     #[test]
@@ -49,11 +46,10 @@ mod tests {
         };
         let first = parser.eat();
         let second = parser.eat();
-        assert_eq!(first, Token::OpenParenthesis);
-        assert_eq!(second, Token::CloseParenthesis);
+        assert_eq!(first, Some(Token::OpenParenthesis));
+        assert_eq!(second, Some(Token::CloseParenthesis));
 
-        // now that we've consumed all tokens, next call should panic
-        let err = catch_unwind(AssertUnwindSafe(|| parser.eat()));
-        assert_eq!(err.is_err(), true)
+        // now that we've consumed all tokens, next call should be None
+        assert_eq!(parser.eat(), None);
     }
 }

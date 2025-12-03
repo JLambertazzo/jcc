@@ -27,6 +27,31 @@ pub enum Token {
     Semicolon,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum TokenKind {
+    Identifier,
+    Constant,
+    Keyword,
+    OpenParenthesis,
+    CloseParenthesis,
+    OpenBrace,
+    CloseBrace,
+    Semicolon,
+}
+
+pub fn get_token_kind(tok: &Token) -> TokenKind {
+    match tok {
+        Token::Identifier(_) => TokenKind::Identifier,
+        Token::Constant(_) => TokenKind::Constant,
+        Token::Keyword(_) => TokenKind::Keyword,
+        Token::OpenParenthesis => TokenKind::OpenParenthesis,
+        Token::CloseParenthesis => TokenKind::CloseParenthesis,
+        Token::OpenBrace => TokenKind::OpenBrace,
+        Token::CloseBrace => TokenKind::CloseBrace,
+        Token::Semicolon => TokenKind::Semicolon,
+    }
+}
+
 fn classify_token(token_content: &str) -> Token {
     /*
      * Given regex patterns for each token type.
@@ -35,7 +60,7 @@ fn classify_token(token_content: &str) -> Token {
 
     let identifier_rgx = Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap();
     let constant_rgx = Regex::new(r"^[0-9]+\b$").unwrap();
-    let keyword_rgx = Regex::new(r"^(int|void|return)$").unwrap();
+    let keyword_rgx = Regex::new(r"^(int|return)$").unwrap();
 
     let content_copy: String = token_content.to_string();
 
@@ -113,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "123bar should be one of the known lexical token types"]
     fn panic_for_bad_variable() {
         classify_token("123bar");
     }

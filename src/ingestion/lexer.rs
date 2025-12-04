@@ -88,7 +88,7 @@ fn classify_token(token_content: &str) -> Token {
 pub fn lex_contents(src_contents: String) -> Vec<Token> {
     let mut tokens = Vec::new();
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
-    let next_token_pattern = Regex::new(r"^\w*\b").unwrap();
+    let next_token_pattern = Regex::new(r"^(\w+\b|--)").unwrap();
 
     let mut contents: String = src_contents.clone();
 
@@ -141,6 +141,19 @@ mod tests {
     #[should_panic = "123bar should be one of the known lexical token types"]
     fn panic_for_bad_variable() {
         classify_token("123bar");
+    }
+
+    #[test]
+    #[should_panic = "-- should be one of the known lexical token types"]
+    fn recognize_minus_minus_above_double_negative() {
+        lex_contents(
+            "
+                int main() {
+                    return --2;
+                }
+            "
+            .to_string(),
+        );
     }
 
     #[test]

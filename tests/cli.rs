@@ -80,3 +80,11 @@ fn ch1_bad_input_unexpected_keyword() {
     cmd.arg("tests/fixtures/input/ch1_bad_input_unexpected_keyword.i");
     cmd.assert().success();
 }
+
+#[test]
+#[should_panic = "-- should be one of the known lexical token types"]
+fn ch2_operator_not_yet_supported() {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/ch2_operator_not_yet_supported.i");
+    cmd.assert().success();
+}

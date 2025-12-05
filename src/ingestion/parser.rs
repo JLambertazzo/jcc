@@ -22,6 +22,13 @@ impl Parser {
             None => None,
         }
     }
+
+    /**
+     * Return a reference to the next lexical token's value without consuming
+     */
+    pub fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.cursor)
+    }
 }
 
 #[cfg(test)]
@@ -51,5 +58,20 @@ mod tests {
 
         // now that we've consumed all tokens, next call should be None
         assert_eq!(parser.eat(), None);
+    }
+
+    #[test]
+    fn peek_does_not_consume_token() {
+        let parser = Parser {
+            tokens: vec![Token::Semicolon],
+            cursor: 0,
+        };
+        let mut next_token = parser.peek();
+        for _ in 1..10 {
+            next_token = parser.peek();
+        }
+
+        assert_eq!(next_token, Some(&Token::Semicolon));
+        assert_eq!(parser.cursor, 0);
     }
 }

@@ -25,6 +25,8 @@ pub enum Token {
     OpenBrace,
     CloseBrace,
     Semicolon,
+    Tilde,
+    Hyphen,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -37,6 +39,8 @@ pub enum TokenKind {
     OpenBrace,
     CloseBrace,
     Semicolon,
+    Tilde,
+    Hyphen,
 }
 
 pub fn get_token_kind(tok: &Token) -> TokenKind {
@@ -49,6 +53,8 @@ pub fn get_token_kind(tok: &Token) -> TokenKind {
         Token::OpenBrace => TokenKind::OpenBrace,
         Token::CloseBrace => TokenKind::CloseBrace,
         Token::Semicolon => TokenKind::Semicolon,
+        Token::Tilde => TokenKind::Tilde,
+        Token::Hyphen => TokenKind::Hyphen,
     }
 }
 
@@ -77,6 +83,8 @@ fn classify_token(token_content: &str) -> Token {
             "{" => Some(Token::OpenBrace),
             "}" => Some(Token::CloseBrace),
             ";" => Some(Token::Semicolon),
+            "~" => Some(Token::Tilde),
+            "-" => Some(Token::Hyphen),
             _ => None,
         }
         .expect(&format!(
@@ -180,6 +188,44 @@ mod tests {
                 Token::OpenBrace,
                 Token::Keyword(Keyword::Return),
                 Token::Constant("2".to_string()),
+                Token::Semicolon,
+                Token::CloseBrace,
+            ])
+        )
+    }
+
+    #[test]
+    fn should_lex_nested_unary_ops() {
+        let result = lex_contents(
+            "
+
+                int main() {
+                    return (~(-(-2)));
+                }
+
+            "
+            .to_string(),
+        );
+
+        assert_eq!(
+            result,
+            Vec::from([
+                Token::Keyword(Keyword::Int),
+                Token::Identifier("main".to_string()),
+                Token::OpenParenthesis,
+                Token::CloseParenthesis,
+                Token::OpenBrace,
+                Token::Keyword(Keyword::Return),
+                Token::OpenParenthesis,
+                Token::Tilde,
+                Token::OpenParenthesis,
+                Token::Hyphen,
+                Token::OpenParenthesis,
+                Token::Hyphen,
+                Token::Constant("2".to_string()),
+                Token::CloseParenthesis,
+                Token::CloseParenthesis,
+                Token::CloseParenthesis,
                 Token::Semicolon,
                 Token::CloseBrace,
             ])

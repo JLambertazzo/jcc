@@ -3,6 +3,7 @@ use crate::ast::{asm, c};
 fn translate_expression(expr: c::Expression) -> asm::Operand {
     match expr {
         c::Expression::Constant(value) => asm::Operand::Immediate(value),
+        c::Expression::Unary(_op, _exp) => todo!(),
     }
 }
 

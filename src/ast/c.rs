@@ -1,6 +1,13 @@
 #[derive(PartialEq, Debug)]
+pub enum UnaryOperator {
+    Negation,
+    Complement,
+}
+
+#[derive(PartialEq, Debug)]
 pub enum Expression {
     Constant(i32),
+    Unary(UnaryOperator, Box<Expression>),
 }
 
 #[derive(PartialEq, Debug)]

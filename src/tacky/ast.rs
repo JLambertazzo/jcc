@@ -1,29 +1,19 @@
 #[derive(PartialEq, Debug)]
-pub enum Register {
-    AX,
-    R10,
-}
-
-#[derive(PartialEq, Debug)]
 pub enum UnaryOperator {
-    Neg,
-    Not,
+    Complement,
+    Negate,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum Operand {
-    Immediate(i32),
-    Register(Register),
-    Pseudo(String),
-    Stack(i32),
+pub enum Value {
+    Constant(i32),
+    Variable(String),
 }
 
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
-    UnaryOp(UnaryOperator, Operand),
-    Mov(Operand, Operand),
-    AllocateStack(i32),
-    Ret,
+    Return(Value),
+    Unary(UnaryOperator, Value, Value),
 }
 
 #[derive(PartialEq, Debug)]

@@ -2,15 +2,28 @@ use super::ast::*;
 
 const INDENT: &str = "  ";
 
+// Currently only using bottom 32 bits of AX, R10 registers. Will need to
+// accomodate a requested size later on
+fn get_register_name(register: Register) -> String {
+    match register {
+        Register::AX => String::from("%eax"),
+        Register::R10 => String::from("%r10d"),
+    }
+}
+
 fn operand_to_string(operand: Operand) -> String {
     match operand {
         Operand::Immediate(i) => format!("${}", i),
-        Operand::Register => String::from("%eax"),
+        Operand::Register(register) => get_register_name(register),
+        Operand::Pseudo(_name) => todo!(),
+        Operand::Stack(_offset) => todo!(),
     }
 }
 
 fn instruction_to_string(instruction: Instruction) -> String {
     match instruction {
+        Instruction::UnaryOp(_op, _operand) => todo!(),
+        Instruction::AllocateStack(_size) => todo!(),
         Instruction::Mov(src, dest) => format!(
             "{INDENT}movl {}, {}\n",
             operand_to_string(src),
@@ -55,7 +68,7 @@ mod tests {
             asm_program_to_string(Program::Program(Function::Function(
                 String::from("main"),
                 vec![
-                    Instruction::Mov(Operand::Immediate(2), Operand::Register),
+                    Instruction::Mov(Operand::Immediate(2), Operand::Register(Register::AX)),
                     Instruction::Ret
                 ]
             ))),

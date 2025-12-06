@@ -2,7 +2,7 @@ mod ast;
 mod from_lexical;
 mod lexer;
 mod parser;
-pub mod to_asm;
+pub mod to_tacky;
 
 pub fn process_program(input: String) -> ast::Program {
     let tokens = lexer::lex_contents(input);

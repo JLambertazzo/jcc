@@ -1,6 +1,6 @@
+use super::ast::*;
 use super::lexer::*;
 use super::parser::Parser;
-use crate::ast::c::*;
 
 macro_rules! eat_token_of_kind {
     ($parser:expr, $expected:expr) => {{
@@ -25,7 +25,7 @@ macro_rules! eat_known_token {
     };
 }
 
-fn parse_unary_op(parser: &mut Parser) -> UnaryOperator {
+fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
     let tok = parser.eat().expect("Expected UnaryOperator but found None");
     match tok {
         Token::Tilde => UnaryOperator::Complement,
@@ -34,7 +34,7 @@ fn parse_unary_op(parser: &mut Parser) -> UnaryOperator {
     }
 }
 
-fn parse_constant(parser: &mut Parser) -> Expression {
+fn parse_constant(parser: &mut Parser<Token>) -> Expression {
     let tok = eat_token_of_kind!(parser, TokenKind::Constant);
     match tok {
         Token::Constant(val) => {
@@ -48,7 +48,7 @@ fn parse_constant(parser: &mut Parser) -> Expression {
     .unwrap()
 }
 
-fn parse_expression(parser: &mut Parser) -> Expression {
+fn parse_expression(parser: &mut Parser<Token>) -> Expression {
     let next_tok = parser
         .peek()
         .expect("Expected expression but no token found");
@@ -69,7 +69,7 @@ fn parse_expression(parser: &mut Parser) -> Expression {
     }
 }
 
-fn parse_return(parser: &mut Parser) -> Statement {
+fn parse_return(parser: &mut Parser<Token>) -> Statement {
     eat_known_token!(parser, Token::Keyword(Keyword::Return));
     let expr = parse_expression(parser);
     eat_token_of_kind!(parser, TokenKind::Semicolon);
@@ -77,11 +77,11 @@ fn parse_return(parser: &mut Parser) -> Statement {
     Statement::Return(expr)
 }
 
-fn parse_statement(parser: &mut Parser) -> Statement {
+fn parse_statement(parser: &mut Parser<Token>) -> Statement {
     parse_return(parser)
 }
 
-fn parse_function(parser: &mut Parser) -> Function {
+fn parse_function(parser: &mut Parser<Token>) -> Function {
     eat_known_token!(parser, Token::Keyword(Keyword::Int));
     let name_tok = eat_token_of_kind!(parser, TokenKind::Identifier);
     let name = match name_tok {
@@ -98,7 +98,7 @@ fn parse_function(parser: &mut Parser) -> Function {
     Function::Function(name, statement)
 }
 
-pub fn parse_program(parser: &mut Parser) -> Program {
+pub fn parse_program(parser: &mut Parser<Token>) -> Program {
     Program::Program(parse_function(parser))
 }
 

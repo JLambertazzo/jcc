@@ -1,19 +1,17 @@
-use crate::ingestion::lexer::*;
-
-pub struct Parser {
-    tokens: Vec<Token>,
+pub struct Parser<T> {
+    tokens: Vec<T>,
     cursor: usize,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+impl<T: Clone> Parser<T> {
+    pub fn new(tokens: Vec<T>) -> Self {
         Parser { tokens, cursor: 0 }
     }
 
     /**
      * Tries to consume a token. Returns None if no token could be extracted
      */
-    pub fn eat(&mut self) -> Option<Token> {
+    pub fn eat(&mut self) -> Option<T> {
         match self.tokens.get(self.cursor) {
             Some(token) => {
                 self.cursor += 1;
@@ -26,7 +24,7 @@ impl Parser {
     /**
      * Return a reference to the next lexical token's value without consuming
      */
-    pub fn peek(&self) -> Option<&Token> {
+    pub fn peek(&self) -> Option<&T> {
         self.tokens.get(self.cursor)
     }
 }
@@ -34,14 +32,13 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::c::lexer::Token;
 
     #[test]
     #[should_panic = "custom expectation error message"]
     fn panic_on_no_token() {
-        let mut parser = Parser {
-            tokens: vec![],
-            cursor: 0,
-        };
+        let tokens: Vec<Token> = vec![];
+        let mut parser = Parser::new(tokens);
         parser.eat().expect("custom expectation error message");
     }
 

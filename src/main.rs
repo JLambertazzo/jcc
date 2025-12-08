@@ -24,8 +24,7 @@ fn main() {
         .expect(&format!("Failed to read input file {:?}", input_path));
     let c_program = c::process_program(contents);
     let tacky_program = c::to_tacky::translate_program(c_program);
-    let asm_program = asm::from_tacky::translate_program(tacky_program);
-    let asm_output = asm::to_code::asm_program_to_string(asm_program);
+    let asm_output = asm::tacky_program_to_asm_code(tacky_program);
     let output_path = Regex::new(r"\.i$")
         .unwrap()
         .replace(input_path, ".s")

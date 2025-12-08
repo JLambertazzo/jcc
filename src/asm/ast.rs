@@ -4,7 +4,7 @@ pub enum Register {
     R10,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum UnaryOperator {
     Neg,
     Not,
@@ -18,7 +18,7 @@ pub enum Operand {
     Stack(i32),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Instruction {
     UnaryOp(UnaryOperator, Operand),
     Mov(Operand, Operand),

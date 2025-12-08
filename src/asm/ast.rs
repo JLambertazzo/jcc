@@ -1,4 +1,4 @@
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Register {
     AX,
     R10,
@@ -10,7 +10,7 @@ pub enum UnaryOperator {
     Not,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Operand {
     Immediate(i32),
     Register(Register),

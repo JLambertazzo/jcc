@@ -1,18 +1,47 @@
 use crate::c;
 use crate::tacky;
 
-fn translate_expression(expr: c::ast::Expression) -> tacky::ast::Value {
+fn translate_unary_operator(op: c::ast::UnaryOperator) -> tacky::ast::UnaryOperator {
+    match op {
+        c::ast::UnaryOperator::Negation => tacky::ast::UnaryOperator::Negate,
+        c::ast::UnaryOperator::Complement => tacky::ast::UnaryOperator::Complement,
+    }
+}
+
+fn translate_expression(
+    expr: c::ast::Expression,
+) -> (Vec<tacky::ast::Instruction>, tacky::ast::Value) {
     match expr {
-        c::ast::Expression::Constant(value) => tacky::ast::Value::Constant(value),
-        c::ast::Expression::Unary(_op, _exp) => todo!(),
+        c::ast::Expression::Constant(value) => (vec![], tacky::ast::Value::Constant(value)),
+        c::ast::Expression::Unary(op, inner_expr) => {
+            let (mut inner_instructions, inner_value) = translate_expression(*inner_expr);
+            let variable = match inner_value {
+                tacky::ast::Value::Constant(_val) => {
+                    tacky::ast::Value::Variable(String::from("negation_result"), 0)
+                }
+                tacky::ast::Value::Variable(ref name, i) => {
+                    tacky::ast::Value::Variable(name.clone(), i + 1)
+                }
+            };
+            inner_instructions.push(tacky::ast::Instruction::Unary(
+                translate_unary_operator(op),
+                inner_value,
+                variable.clone(),
+            ));
+            (inner_instructions, variable)
+        }
     }
 }
 
 fn translate_statement(statement: c::ast::Statement) -> Vec<tacky::ast::Instruction> {
     match statement {
         c::ast::Statement::Return(expr) => {
-            let value = translate_expression(expr);
-            vec![tacky::ast::Instruction::Return(value)]
+            let (inner_instructions, value) = translate_expression(expr);
+            [
+                inner_instructions.as_slice(),
+                &[tacky::ast::Instruction::Return(value)],
+            ]
+            .concat()
         }
     }
 }

@@ -1,16 +1,22 @@
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum UnaryOperator {
     Complement,
     Negate,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Value {
     Constant(i32),
-    Variable(String),
+    /**
+     * Representing TACKY variables with a string + integer allows us to easily
+     * expand nested operations (ex: `-(-2)`) into an inline series of
+     * operations with each intermediate value stored in an intermediate
+     * variable
+     */
+    Variable(String, i32),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Instruction {
     Return(Value),
     Unary(UnaryOperator, Value, Value),

@@ -1,14 +1,17 @@
 use super::ast as asm;
 use crate::tacky::ast as tacky;
 
-fn translate_unary_op(_op: tacky::UnaryOperator) {
-    todo!()
+fn translate_unary_op(op: tacky::UnaryOperator) -> asm::UnaryOperator {
+    match op {
+        tacky::UnaryOperator::Complement => asm::UnaryOperator::Neg,
+        tacky::UnaryOperator::Negate => asm::UnaryOperator::Not,
+    }
 }
 
 fn translate_value(value: tacky::Value) -> asm::Operand {
     match value {
         tacky::Value::Constant(i) => asm::Operand::Immediate(i),
-        tacky::Value::Variable(_name) => todo!(),
+        tacky::Value::Variable(name, i) => asm::Operand::Pseudo(format!("{name}.{i}")),
     }
 }
 
@@ -21,7 +24,13 @@ fn translate_instruction(instruction: tacky::Instruction) -> Vec<asm::Instructio
             ),
             asm::Instruction::Ret,
         ],
-        tacky::Instruction::Unary(_op, _src, _dest) => todo!(),
+        tacky::Instruction::Unary(op, src, dst) => {
+            let dst_operand = translate_value(dst);
+            vec![
+                asm::Instruction::Mov(translate_value(src), dst_operand.clone()),
+                asm::Instruction::UnaryOp(translate_unary_op(op), dst_operand),
+            ]
+        }
     }
 }
 

@@ -18,3 +18,32 @@ pub fn tacky_program_to_asm_code(tacky_program: crate::tacky::ast::Program) -> S
     );
     to_code::asm_program_to_string(processed_asm_program)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tacky::ast as tacky;
+
+    #[test]
+    fn parse_simple_tacky_program() {
+        let tacky_program = tacky::Program::Program(tacky::Function::Function(
+            String::from("main"),
+            vec![tacky::Instruction::Return(tacky::Value::Constant(2))],
+        ));
+        let asm = [
+            "  .globl main",
+            "main:",
+            "  pushq %rbp",
+            "  movq %rsp, %rbp",
+            "  subq $0, %rsp",
+            "  movl $2, %eax",
+            "  movq %rbp, %rsp",
+            "  popq %rbp",
+            "  ret",
+            "",
+            ".section .note.GNU-stack,\"\",@progbits",
+        ]
+        .join("\n");
+        assert_eq!(tacky_program_to_asm_code(tacky_program), asm + "\n");
+    }
+}

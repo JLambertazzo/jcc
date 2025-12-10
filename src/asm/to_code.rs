@@ -75,23 +75,3 @@ pub fn asm_program_to_string(program: Program) -> String {
         ),
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_simple_asm_program_to_string() {
-        assert_eq!(
-            asm_program_to_string(Program::Program(Function::Function(
-                String::from("main"),
-                vec![
-                    Instruction::AllocateStack(0),
-                    Instruction::Mov(Operand::Immediate(2), Operand::Register(Register::AX)),
-                    Instruction::Ret
-                ]
-            ))),
-            format!("{INDENT}.globl main\nmain:\n{INDENT}pushq %rbp\n{INDENT}movq %rsp, %rbp\n{INDENT}subq $0, %rsp\n{INDENT}movl $2, %eax\n{INDENT}movq %rbp, %rsp\n{INDENT}popq %rbp\n{INDENT}ret\n\n.section .note.GNU-stack,\"\",@progbits\n")
-        )
-    }
-}

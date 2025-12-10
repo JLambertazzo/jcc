@@ -88,3 +88,23 @@ fn ch2_operator_not_yet_supported() {
     cmd.arg("tests/fixtures/input/ch2_operator_not_yet_supported.i");
     cmd.assert().success();
 }
+
+#[test]
+fn ch2_simple_input() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/ch2_simple_input.i");
+    cmd.assert().success();
+    expect_match_fixture!("ch2_simple_input.s");
+
+    Ok(())
+}
+
+#[test]
+fn ch2_nested_unary() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = cargo_bin_cmd!("compiler");
+    cmd.arg("tests/fixtures/input/ch2_nested_unary.i");
+    cmd.assert().success();
+    expect_match_fixture!("ch2_nested_unary.s");
+
+    Ok(())
+}

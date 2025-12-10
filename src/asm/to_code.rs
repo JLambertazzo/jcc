@@ -15,7 +15,7 @@ fn operand_to_string(operand: Operand) -> String {
     match operand {
         Operand::Immediate(i) => format!("${}", i),
         Operand::Register(register) => get_register_name(register),
-        Operand::Pseudo(_name) => todo!(),
+        Operand::Pseudo(_name) => panic!("Pseudoregisters cannot be emitted to code"),
         Operand::Stack(_offset) => todo!(),
     }
 }

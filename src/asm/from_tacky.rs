@@ -3,8 +3,8 @@ use crate::tacky::ast as tacky;
 
 fn translate_unary_op(op: tacky::UnaryOperator) -> asm::UnaryOperator {
     match op {
-        tacky::UnaryOperator::Complement => asm::UnaryOperator::Neg,
-        tacky::UnaryOperator::Negate => asm::UnaryOperator::Not,
+        tacky::UnaryOperator::Complement => asm::UnaryOperator::Not,
+        tacky::UnaryOperator::Negate => asm::UnaryOperator::Neg,
     }
 }
 

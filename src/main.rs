@@ -18,7 +18,6 @@ struct Cli {
 }
 
 fn main() {
-    println!("hello???");
     let cli = Cli::parse();
     let input_path = cli.filepath.as_str();
     let contents = fs::read_to_string(input_path)

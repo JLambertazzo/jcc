@@ -5,9 +5,19 @@ pub enum UnaryOperator {
 }
 
 #[derive(PartialEq, Debug)]
+pub enum BinaryOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulo,
+}
+
+#[derive(PartialEq, Debug)]
 pub enum Expression {
     Constant(i32),
     Unary(UnaryOperator, Box<Expression>),
+    Binary(BinaryOperator, Box<Expression>, Box<Expression>),
 }
 
 #[derive(PartialEq, Debug)]

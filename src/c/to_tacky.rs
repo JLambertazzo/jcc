@@ -30,6 +30,7 @@ fn translate_expression(
             ));
             (inner_instructions, variable)
         }
+        c::ast::Expression::Binary(_, __, ___) => todo!(),
     }
 }
 

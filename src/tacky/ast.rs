@@ -5,6 +5,15 @@ pub enum UnaryOperator {
 }
 
 #[derive(PartialEq, Debug, Clone)]
+pub enum BinaryOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulo,
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Value {
     Constant(i32),
     /**
@@ -20,6 +29,7 @@ pub enum Value {
 pub enum Instruction {
     Return(Value),
     Unary(UnaryOperator, Value, Value),
+    Binary(BinaryOperator, Value, Value, Value),
 }
 
 #[derive(PartialEq, Debug)]

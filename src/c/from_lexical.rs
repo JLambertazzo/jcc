@@ -335,4 +335,104 @@ mod tests {
             ))
         )
     }
+
+    #[test]
+    fn parse_binary_expression_with_nested_unary() {
+        let program_token_vector = vec![
+            Token::Keyword(Keyword::Int),
+            Token::Identifier("main".to_string()),
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::Tilde,
+            Token::Constant(String::from("2")),
+            Token::Plus,
+            Token::Hyphen,
+            Token::Constant(String::from("3")),
+            Token::Semicolon,
+            Token::CloseBrace,
+        ];
+        assert_eq!(
+            parse_program(&mut Parser::new(program_token_vector)),
+            Program::Program(Function::Function(
+                String::from("main"),
+                Statement::Return(Expression::Binary(
+                    BinaryOperator::Add,
+                    Box::new(Expression::Unary(
+                        UnaryOperator::Complement,
+                        Box::new(Expression::Constant(2))
+                    )),
+                    Box::new(Expression::Unary(
+                        UnaryOperator::Negation,
+                        Box::new(Expression::Constant(3))
+                    ))
+                ))
+            ))
+        )
+    }
+
+    #[test]
+    fn applies_correct_order_of_operations() {
+        let program_token_vector = vec![
+            Token::Keyword(Keyword::Int),
+            Token::Identifier("main".to_string()),
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::Constant(String::from("1")),
+            Token::Plus,
+            Token::Constant(String::from("2")), // \
+            Token::Star,
+            Token::Constant(String::from("3")), // /
+            Token::Hyphen,
+            Token::Constant(String::from("4")), // \
+            Token::Slash,
+            Token::Constant(String::from("5")), // /
+            Token::Plus,
+            Token::Constant(String::from("6")), // \
+            Token::Modulo,
+            Token::Constant(String::from("7")), // /
+            Token::Hyphen,
+            Token::Constant(String::from("1")),
+            Token::Semicolon,
+            Token::CloseBrace,
+        ];
+        assert_eq!(
+            parse_program(&mut Parser::new(program_token_vector)),
+            Program::Program(Function::Function(
+                String::from("main"),
+                Statement::Return(Expression::Binary(
+                    BinaryOperator::Subtract,
+                    Box::new(Expression::Binary(
+                        BinaryOperator::Add,
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Subtract,
+                            Box::new(Expression::Binary(
+                                BinaryOperator::Add,
+                                Box::new(Expression::Constant(1)),
+                                Box::new(Expression::Binary(
+                                    BinaryOperator::Multiply,
+                                    Box::new(Expression::Constant(2)),
+                                    Box::new(Expression::Constant(3))
+                                ))
+                            )),
+                            Box::new(Expression::Binary(
+                                BinaryOperator::Divide,
+                                Box::new(Expression::Constant(4)),
+                                Box::new(Expression::Constant(5))
+                            ))
+                        )),
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Modulo,
+                            Box::new(Expression::Constant(6)),
+                            Box::new(Expression::Constant(7)),
+                        ))
+                    )),
+                    Box::new(Expression::Constant(1))
+                ))
+            ))
+        )
+    }
 }

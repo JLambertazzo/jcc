@@ -31,6 +31,7 @@ fn translate_instruction(instruction: tacky::Instruction) -> Vec<asm::Instructio
                 asm::Instruction::UnaryOp(translate_unary_op(op), dst_operand),
             ]
         }
+        tacky::Instruction::Binary(_, __, ___, ____) => todo!(),
     }
 }
 

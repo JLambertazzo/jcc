@@ -34,6 +34,20 @@ fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
     }
 }
 
+fn parse_binary_op(parser: &mut Parser<Token>) -> BinaryOperator {
+    let tok = parser
+        .eat()
+        .expect("Expected BinaryOperator but found None");
+    match tok {
+        Token::Star => BinaryOperator::Multiply,
+        Token::Slash => BinaryOperator::Divide,
+        Token::Modulo => BinaryOperator::Modulo,
+        Token::Plus => BinaryOperator::Add,
+        Token::Hyphen => BinaryOperator::Subtract,
+        _ => panic!("Expected BinaryOperator but found {:?}", tok),
+    }
+}
+
 fn parse_constant(parser: &mut Parser<Token>) -> Expression {
     let tok = eat_token_of_kind!(parser, TokenKind::Constant);
     match tok {
@@ -56,13 +70,12 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
         TokenKind::Constant => parse_constant(parser),
         TokenKind::Tilde | TokenKind::Hyphen => {
             let op = parse_unary_op(parser);
-            let expr = parse_expression(parser);
+            let expr = parse_primary(parser);
             Expression::Unary(op, Box::new(expr))
         }
         TokenKind::OpenParenthesis => {
             eat_known_token!(parser, Token::OpenParenthesis);
-            let lhs = parse_primary(parser);
-            let expr = parse_expression_with_precedence(lhs, parser, 0); // parentheses should reset precedence!
+            let expr = parse_expression(parser);
             eat_known_token!(parser, Token::CloseParenthesis);
             expr
         }
@@ -70,57 +83,37 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
     }
 }
 
-fn next_token_binary_op_valid_precedence(parser: &Parser<Token>, min_precedence: i32) -> bool {
-    let tok = parser.peek().expect("Expected a token but found none");
-    match get_token_kind(tok) {
-        TokenKind::Star => min_precedence <= 2,
-        TokenKind::Slash => min_precedence <= 2,
-        TokenKind::Modulo => min_precedence <= 2,
-        TokenKind::Plus => min_precedence <= 1,
-        TokenKind::Hyphen => min_precedence <= 1,
-        _ => false,
-    }
-}
-
-fn token_as_binary_operator(token: &Token) -> BinaryOperator {
-    match token {
+fn is_next_token_binary_op_no_lower_precedence(
+    parser: &mut Parser<Token>,
+    min_precedence: i32,
+) -> bool {
+    let tok = parser.peek().expect("Expected a token but found None");
+    let binop = match tok {
         Token::Star => BinaryOperator::Multiply,
         Token::Slash => BinaryOperator::Divide,
         Token::Modulo => BinaryOperator::Modulo,
         Token::Plus => BinaryOperator::Add,
         Token::Hyphen => BinaryOperator::Subtract,
-        _ => panic!("Unexpected binary operator"),
-    }
+        _ => {
+            return false;
+        }
+    };
+    binary_operator_precedence(&binop) >= min_precedence
 }
 
-fn parse_expression_with_precedence(
-    lhs: Expression,
-    parser: &mut Parser<Token>,
-    min_precedence: i32,
-) -> Expression {
-    let mut expr = lhs;
-    while next_token_binary_op_valid_precedence(parser, min_precedence) {
-        let operator = parser
-            .eat()
-            .expect("Detected next token but failed to retrieve it");
-        let mut rhs = parse_primary(parser);
-        // i think we only have left-associative ops rn
-        // might need special case for ~ and - DAMN
-        while next_token_binary_op_valid_precedence(parser, min_precedence + 1) {
-            rhs = parse_expression_with_precedence(rhs, parser, min_precedence + 1);
-        }
-        expr = Expression::Binary(
-            token_as_binary_operator(&operator),
-            Box::new(expr),
-            Box::new(rhs),
-        );
+fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: i32) -> Expression {
+    let mut expr = parse_primary(parser);
+    while is_next_token_binary_op_no_lower_precedence(parser, min_precedence) {
+        let operator = parse_binary_op(parser);
+        let rhs =
+            parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
+        expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));
     }
     expr
 }
 
 fn parse_expression(parser: &mut Parser<Token>) -> Expression {
-    let lhs = parse_primary(parser);
-    parse_expression_with_precedence(lhs, parser, 0)
+    parse_expression_with_precedence(parser, 0)
 }
 
 fn parse_return(parser: &mut Parser<Token>) -> Statement {
@@ -285,7 +278,6 @@ mod tests {
         )
     }
 
-    // TODO is right-associativity correct? Or did I mess this up???
     #[test]
     fn test_parse_many_binary_expressions() {
         let program_token_vector = vec![
@@ -320,25 +312,25 @@ mod tests {
             Program::Program(Function::Function(
                 "main".to_string(),
                 Statement::Return(Expression::Binary(
-                    BinaryOperator::Multiply,
+                    BinaryOperator::Divide,
                     Box::new(Expression::Binary(
-                        BinaryOperator::Add,
-                        Box::new(Expression::Constant(1)),
-                        Box::new(Expression::Constant(2))
-                    )),
-                    Box::new(Expression::Binary(
-                        BinaryOperator::Divide,
+                        BinaryOperator::Multiply,
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Add,
+                            Box::new(Expression::Constant(1)),
+                            Box::new(Expression::Constant(2)),
+                        )),
                         Box::new(Expression::Binary(
                             BinaryOperator::Subtract,
                             Box::new(Expression::Constant(4)),
-                            Box::new(Expression::Constant(3))
-                        )),
-                        Box::new(Expression::Binary(
-                            BinaryOperator::Modulo,
                             Box::new(Expression::Constant(3)),
-                            Box::new(Expression::Constant(2))
-                        ))
-                    ))
+                        )),
+                    )),
+                    Box::new(Expression::Binary(
+                        BinaryOperator::Modulo,
+                        Box::new(Expression::Constant(3)),
+                        Box::new(Expression::Constant(2)),
+                    )),
                 ))
             ))
         )

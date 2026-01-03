@@ -14,8 +14,13 @@ fn get_instruction_max_stack_offset(instruction: &asm::Instruction) -> i32 {
             max(operand_stack_offset(src), operand_stack_offset(dst))
         }
         asm::Instruction::UnaryOp(_, operand) => operand_stack_offset(operand),
+        asm::Instruction::Binary(_, src, dst) => {
+            max(operand_stack_offset(src), operand_stack_offset(dst))
+        }
+        asm::Instruction::Idiv(denominator) => operand_stack_offset(denominator),
         asm::Instruction::AllocateStack(_) => -1,
         asm::Instruction::Ret => -1,
+        asm::Instruction::Cdq => -1,
     }
 }
 

@@ -33,6 +33,15 @@ pub fn replace_pseudoregisters_in_instructions(
             asm::Instruction::UnaryOp(op, operand) => {
                 asm::Instruction::UnaryOp(op, replace_pseudoregister(operand))
             }
+            asm::Instruction::Binary(op, src, dst) => asm::Instruction::Binary(
+                op,
+                replace_pseudoregister(src),
+                replace_pseudoregister(dst),
+            ),
+            asm::Instruction::Idiv(denominator) => {
+                asm::Instruction::Idiv(replace_pseudoregister(denominator))
+            }
+            asm::Instruction::Cdq => asm::Instruction::Cdq,
         };
         instructions_without_pseudo.push(instruction_without_pseudo);
     }

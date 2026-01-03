@@ -8,6 +8,18 @@ fn translate_unary_op(op: tacky::UnaryOperator) -> asm::UnaryOperator {
     }
 }
 
+fn translate_binary_op(op: tacky::BinaryOperator) -> asm::BinaryOperator {
+    match op {
+        tacky::BinaryOperator::Add => asm::BinaryOperator::Add,
+        tacky::BinaryOperator::Subtract => asm::BinaryOperator::Sub,
+        tacky::BinaryOperator::Multiply => asm::BinaryOperator::Mul,
+        _ => panic!(
+            "Operator {:?} does not have a corresponding binary operator in asm",
+            op
+        ),
+    }
+}
+
 fn translate_value(value: tacky::Value) -> asm::Operand {
     match value {
         tacky::Value::Constant(i) => asm::Operand::Immediate(i),
@@ -31,7 +43,44 @@ fn translate_instruction(instruction: tacky::Instruction) -> Vec<asm::Instructio
                 asm::Instruction::UnaryOp(translate_unary_op(op), dst_operand),
             ]
         }
-        tacky::Instruction::Binary(_, __, ___, ____) => todo!(),
+        tacky::Instruction::Binary(op, a, b, dst) => match op {
+            tacky::BinaryOperator::Modulo => vec![
+                asm::Instruction::Mov(
+                    translate_value(a),
+                    asm::Operand::Register(asm::Register::AX),
+                ),
+                asm::Instruction::Cdq,
+                asm::Instruction::Idiv(translate_value(b)),
+                asm::Instruction::Mov(
+                    asm::Operand::Register(asm::Register::DX),
+                    translate_value(dst),
+                ),
+            ],
+            tacky::BinaryOperator::Divide => vec![
+                asm::Instruction::Mov(
+                    translate_value(a),
+                    asm::Operand::Register(asm::Register::AX),
+                ),
+                asm::Instruction::Cdq,
+                asm::Instruction::Idiv(translate_value(b)),
+                asm::Instruction::Mov(
+                    asm::Operand::Register(asm::Register::AX),
+                    translate_value(dst),
+                ),
+            ],
+            _ => {
+                let dst_operand = translate_value(dst);
+                vec![
+                    // all current binops are associative (+,-,*)
+                    asm::Instruction::Mov(translate_value(a), dst_operand.clone()),
+                    asm::Instruction::Binary(
+                        translate_binary_op(op),
+                        translate_value(b),
+                        dst_operand,
+                    ),
+                ]
+            }
+        },
     }
 }
 

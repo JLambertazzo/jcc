@@ -7,7 +7,9 @@ const INDENT: &str = "  ";
 fn get_register_name(register: Register) -> String {
     match register {
         Register::AX => String::from("%eax"),
+        Register::DX => String::from("%rdx"),
         Register::R10 => String::from("%r10d"),
+        Register::R11 => String::from("%r11d"),
     }
 }
 
@@ -15,6 +17,14 @@ fn unary_op_to_string(operator: UnaryOperator) -> String {
     match operator {
         UnaryOperator::Neg => String::from("negl"),
         UnaryOperator::Not => String::from("notl"),
+    }
+}
+
+fn binary_op_to_string(operator: BinaryOperator) -> String {
+    match operator {
+        BinaryOperator::Add => String::from("addl"),
+        BinaryOperator::Sub => String::from("subl"),
+        BinaryOperator::Mul => String::from("imull"),
     }
 }
 
@@ -34,6 +44,12 @@ fn instruction_to_string(instruction: Instruction) -> String {
             unary_op_to_string(op),
             operand_to_string(operand)
         ),
+        Instruction::Binary(op, src, dst) => format!(
+            "{INDENT}{} {}, {}\n",
+            binary_op_to_string(op),
+            operand_to_string(src),
+            operand_to_string(dst)
+        ),
         Instruction::AllocateStack(size) => format!("{INDENT}subq ${}, %rsp\n", size),
         Instruction::Mov(src, dest) => format!(
             "{INDENT}movl {}, {}\n",
@@ -46,6 +62,10 @@ fn instruction_to_string(instruction: Instruction) -> String {
             format!("{INDENT}ret\n"),
         ]
         .join(""),
+        Instruction::Cdq => format!("{INDENT}cdq"),
+        Instruction::Idiv(denominator) => {
+            format!("{INDENT}idivq {}", operand_to_string(denominator))
+        }
     }
 }
 

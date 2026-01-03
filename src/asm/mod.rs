@@ -13,7 +13,7 @@ pub fn tacky_program_to_asm_code(tacky_program: crate::tacky::ast::Program) -> S
         vec![
             replace_pseudo::replace_pseudoregisters_in_instructions,
             add_stack_allocation::add_stack_allocation_instruction,
-            fix_move_with_two_addresses::use_scratch_register_for_move,
+            fix_move_with_two_addresses::use_scratch_registers,
         ],
     );
     to_code::asm_program_to_string(processed_asm_program)

@@ -1,13 +1,22 @@
 #[derive(PartialEq, Debug, Clone)]
 pub enum Register {
     AX,
+    DX,
     R10,
+    R11,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum UnaryOperator {
     Neg,
     Not,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum BinaryOperator {
+    Add,
+    Sub,
+    Mul,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -21,8 +30,11 @@ pub enum Operand {
 #[derive(PartialEq, Debug, Clone)]
 pub enum Instruction {
     UnaryOp(UnaryOperator, Operand),
+    Binary(BinaryOperator, Operand, Operand),
     Mov(Operand, Operand),
     AllocateStack(i32),
+    Idiv(Operand),
+    Cdq,
     Ret,
 }
 

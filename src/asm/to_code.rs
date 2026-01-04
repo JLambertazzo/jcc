@@ -10,6 +10,8 @@ fn get_register_name(register: Register) -> String {
         Register::DX => String::from("%edx"),
         Register::R10 => String::from("%r10d"),
         Register::R11 => String::from("%r11d"),
+        Register::CX => String::from("%ecx"),
+        Register::CL => String::from("%cl"),
     }
 }
 
@@ -25,6 +27,11 @@ fn binary_op_to_string(operator: BinaryOperator) -> String {
         BinaryOperator::Add => String::from("addl"),
         BinaryOperator::Sub => String::from("subl"),
         BinaryOperator::Mul => String::from("imull"),
+        BinaryOperator::Sar => String::from("sarl"),
+        BinaryOperator::Sal => String::from("sall"),
+        BinaryOperator::And => String::from("andl"),
+        BinaryOperator::Xor => String::from("xorl"),
+        BinaryOperator::Or => String::from("orl"),
     }
 }
 

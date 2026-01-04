@@ -62,9 +62,9 @@ fn instruction_to_string(instruction: Instruction) -> String {
             format!("{INDENT}ret\n"),
         ]
         .join(""),
-        Instruction::Cdq => format!("{INDENT}cdq"),
+        Instruction::Cdq => format!("{INDENT}cdq\n"),
         Instruction::Idiv(denominator) => {
-            format!("{INDENT}idivq {}", operand_to_string(denominator))
+            format!("{INDENT}idivq {}\n", operand_to_string(denominator))
         }
     }
 }

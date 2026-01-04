@@ -107,7 +107,11 @@ fn parse_function(parser: &mut Parser<Token>) -> Function {
 }
 
 pub fn parse_program(parser: &mut Parser<Token>) -> Program {
-    Program::Program(parse_function(parser))
+    let program = Program::Program(parse_function(parser));
+    if let Some(tok) = parser.peek() {
+        panic!("Parsed entire program but found extra content starting with token {:?}", tok)
+    };
+    program
 }
 
 #[cfg(test)]

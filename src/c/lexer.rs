@@ -29,6 +29,10 @@ pub enum Token {
     Semicolon,
     Tilde,
     Hyphen,
+    Plus,
+    Star,
+    Slash,
+    Modulo,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -43,6 +47,10 @@ pub enum TokenKind {
     Semicolon,
     Tilde,
     Hyphen,
+    Plus,
+    Star,
+    Slash,
+    Modulo,
 }
 
 pub fn get_token_kind(tok: &Token) -> TokenKind {
@@ -57,6 +65,10 @@ pub fn get_token_kind(tok: &Token) -> TokenKind {
         Token::Semicolon => TokenKind::Semicolon,
         Token::Tilde => TokenKind::Tilde,
         Token::Hyphen => TokenKind::Hyphen,
+        Token::Plus => TokenKind::Plus,
+        Token::Star => TokenKind::Star,
+        Token::Slash => TokenKind::Slash,
+        Token::Modulo => TokenKind::Modulo,
     }
 }
 
@@ -87,6 +99,10 @@ fn classify_token(token_content: &str) -> Token {
             ";" => Some(Token::Semicolon),
             "~" => Some(Token::Tilde),
             "-" => Some(Token::Hyphen),
+            "+" => Some(Token::Plus),
+            "*" => Some(Token::Star),
+            "/" => Some(Token::Slash),
+            "%" => Some(Token::Modulo),
             _ => None,
         }
         .expect(&format!(
@@ -227,6 +243,51 @@ mod tests {
                 Token::Constant("2".to_string()),
                 Token::CloseParenthesis,
                 Token::CloseParenthesis,
+                Token::CloseParenthesis,
+                Token::Semicolon,
+                Token::CloseBrace,
+            ])
+        )
+    }
+
+    #[test]
+    fn should_lex_multiple_binary_ops() {
+        let result = lex_contents(
+            "
+
+                int main() {
+                    return (1 + 2) * (4 - 3) / (3 % 2);
+                }
+
+            "
+            .to_string(),
+        );
+
+        assert_eq!(
+            result,
+            Vec::from([
+                Token::Keyword(Keyword::Int),
+                Token::Identifier("main".to_string()),
+                Token::OpenParenthesis,
+                Token::CloseParenthesis,
+                Token::OpenBrace,
+                Token::Keyword(Keyword::Return),
+                Token::OpenParenthesis,
+                Token::Constant(String::from("1")),
+                Token::Plus,
+                Token::Constant(String::from("2")),
+                Token::CloseParenthesis,
+                Token::Star,
+                Token::OpenParenthesis,
+                Token::Constant(String::from("4")),
+                Token::Hyphen,
+                Token::Constant(String::from("3")),
+                Token::CloseParenthesis,
+                Token::Slash,
+                Token::OpenParenthesis,
+                Token::Constant(String::from("3")),
+                Token::Modulo,
+                Token::Constant(String::from("2")),
                 Token::CloseParenthesis,
                 Token::Semicolon,
                 Token::CloseBrace,

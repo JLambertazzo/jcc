@@ -34,6 +34,20 @@ fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
     }
 }
 
+fn parse_binary_op(parser: &mut Parser<Token>) -> BinaryOperator {
+    let tok = parser
+        .eat()
+        .expect("Expected BinaryOperator but found None");
+    match tok {
+        Token::Star => BinaryOperator::Multiply,
+        Token::Slash => BinaryOperator::Divide,
+        Token::Modulo => BinaryOperator::Modulo,
+        Token::Plus => BinaryOperator::Add,
+        Token::Hyphen => BinaryOperator::Subtract,
+        _ => panic!("Expected BinaryOperator but found {:?}", tok),
+    }
+}
+
 fn parse_constant(parser: &mut Parser<Token>) -> Expression {
     let tok = eat_token_of_kind!(parser, TokenKind::Constant);
     match tok {
@@ -48,7 +62,7 @@ fn parse_constant(parser: &mut Parser<Token>) -> Expression {
     .unwrap()
 }
 
-fn parse_expression(parser: &mut Parser<Token>) -> Expression {
+fn parse_primary(parser: &mut Parser<Token>) -> Expression {
     let next_tok = parser
         .peek()
         .expect("Expected expression but no token found");
@@ -56,7 +70,7 @@ fn parse_expression(parser: &mut Parser<Token>) -> Expression {
         TokenKind::Constant => parse_constant(parser),
         TokenKind::Tilde | TokenKind::Hyphen => {
             let op = parse_unary_op(parser);
-            let expr = parse_expression(parser);
+            let expr = parse_primary(parser);
             Expression::Unary(op, Box::new(expr))
         }
         TokenKind::OpenParenthesis => {
@@ -67,6 +81,39 @@ fn parse_expression(parser: &mut Parser<Token>) -> Expression {
         }
         _ => panic!("Invalid expression. Cannot begin with {:?}", next_tok),
     }
+}
+
+fn is_next_token_binary_op_no_lower_precedence(
+    parser: &mut Parser<Token>,
+    min_precedence: i32,
+) -> bool {
+    let tok = parser.peek().expect("Expected a token but found None");
+    let binop = match tok {
+        Token::Star => BinaryOperator::Multiply,
+        Token::Slash => BinaryOperator::Divide,
+        Token::Modulo => BinaryOperator::Modulo,
+        Token::Plus => BinaryOperator::Add,
+        Token::Hyphen => BinaryOperator::Subtract,
+        _ => {
+            return false;
+        }
+    };
+    binary_operator_precedence(&binop) >= min_precedence
+}
+
+fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: i32) -> Expression {
+    let mut expr = parse_primary(parser);
+    while is_next_token_binary_op_no_lower_precedence(parser, min_precedence) {
+        let operator = parse_binary_op(parser);
+        let rhs =
+            parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
+        expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));
+    }
+    expr
+}
+
+fn parse_expression(parser: &mut Parser<Token>) -> Expression {
+    parse_expression_with_precedence(parser, 0)
 }
 
 fn parse_return(parser: &mut Parser<Token>) -> Statement {
@@ -226,6 +273,164 @@ mod tests {
                             Box::new(Expression::Constant(2))
                         ))
                     ))
+                ))
+            ))
+        )
+    }
+
+    #[test]
+    fn test_parse_many_binary_expressions() {
+        let program_token_vector = vec![
+            Token::Keyword(Keyword::Int),
+            Token::Identifier("main".to_string()),
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::OpenParenthesis,
+            Token::Constant(String::from("1")),
+            Token::Plus,
+            Token::Constant(String::from("2")),
+            Token::CloseParenthesis,
+            Token::Star,
+            Token::OpenParenthesis,
+            Token::Constant(String::from("4")),
+            Token::Hyphen,
+            Token::Constant(String::from("3")),
+            Token::CloseParenthesis,
+            Token::Slash,
+            Token::OpenParenthesis,
+            Token::Constant(String::from("3")),
+            Token::Modulo,
+            Token::Constant(String::from("2")),
+            Token::CloseParenthesis,
+            Token::Semicolon,
+            Token::CloseBrace,
+        ];
+        assert_eq!(
+            parse_program(&mut Parser::new(program_token_vector)),
+            Program::Program(Function::Function(
+                "main".to_string(),
+                Statement::Return(Expression::Binary(
+                    BinaryOperator::Divide,
+                    Box::new(Expression::Binary(
+                        BinaryOperator::Multiply,
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Add,
+                            Box::new(Expression::Constant(1)),
+                            Box::new(Expression::Constant(2)),
+                        )),
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Subtract,
+                            Box::new(Expression::Constant(4)),
+                            Box::new(Expression::Constant(3)),
+                        )),
+                    )),
+                    Box::new(Expression::Binary(
+                        BinaryOperator::Modulo,
+                        Box::new(Expression::Constant(3)),
+                        Box::new(Expression::Constant(2)),
+                    )),
+                ))
+            ))
+        )
+    }
+
+    #[test]
+    fn parse_binary_expression_with_nested_unary() {
+        let program_token_vector = vec![
+            Token::Keyword(Keyword::Int),
+            Token::Identifier("main".to_string()),
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::Tilde,
+            Token::Constant(String::from("2")),
+            Token::Plus,
+            Token::Hyphen,
+            Token::Constant(String::from("3")),
+            Token::Semicolon,
+            Token::CloseBrace,
+        ];
+        assert_eq!(
+            parse_program(&mut Parser::new(program_token_vector)),
+            Program::Program(Function::Function(
+                String::from("main"),
+                Statement::Return(Expression::Binary(
+                    BinaryOperator::Add,
+                    Box::new(Expression::Unary(
+                        UnaryOperator::Complement,
+                        Box::new(Expression::Constant(2))
+                    )),
+                    Box::new(Expression::Unary(
+                        UnaryOperator::Negation,
+                        Box::new(Expression::Constant(3))
+                    ))
+                ))
+            ))
+        )
+    }
+
+    #[test]
+    fn applies_correct_order_of_operations() {
+        let program_token_vector = vec![
+            Token::Keyword(Keyword::Int),
+            Token::Identifier("main".to_string()),
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::Constant(String::from("1")),
+            Token::Plus,
+            Token::Constant(String::from("2")), // \
+            Token::Star,
+            Token::Constant(String::from("3")), // /
+            Token::Hyphen,
+            Token::Constant(String::from("4")), // \
+            Token::Slash,
+            Token::Constant(String::from("5")), // /
+            Token::Plus,
+            Token::Constant(String::from("6")), // \
+            Token::Modulo,
+            Token::Constant(String::from("7")), // /
+            Token::Hyphen,
+            Token::Constant(String::from("1")),
+            Token::Semicolon,
+            Token::CloseBrace,
+        ];
+        assert_eq!(
+            parse_program(&mut Parser::new(program_token_vector)),
+            Program::Program(Function::Function(
+                String::from("main"),
+                Statement::Return(Expression::Binary(
+                    BinaryOperator::Subtract,
+                    Box::new(Expression::Binary(
+                        BinaryOperator::Add,
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Subtract,
+                            Box::new(Expression::Binary(
+                                BinaryOperator::Add,
+                                Box::new(Expression::Constant(1)),
+                                Box::new(Expression::Binary(
+                                    BinaryOperator::Multiply,
+                                    Box::new(Expression::Constant(2)),
+                                    Box::new(Expression::Constant(3))
+                                ))
+                            )),
+                            Box::new(Expression::Binary(
+                                BinaryOperator::Divide,
+                                Box::new(Expression::Constant(4)),
+                                Box::new(Expression::Constant(5))
+                            ))
+                        )),
+                        Box::new(Expression::Binary(
+                            BinaryOperator::Modulo,
+                            Box::new(Expression::Constant(6)),
+                            Box::new(Expression::Constant(7)),
+                        ))
+                    )),
+                    Box::new(Expression::Constant(1))
                 ))
             ))
         )

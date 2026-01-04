@@ -7,7 +7,7 @@ const INDENT: &str = "  ";
 fn get_register_name(register: Register) -> String {
     match register {
         Register::AX => String::from("%eax"),
-        Register::DX => String::from("%rdx"),
+        Register::DX => String::from("%edx"),
         Register::R10 => String::from("%r10d"),
         Register::R11 => String::from("%r11d"),
     }
@@ -64,7 +64,7 @@ fn instruction_to_string(instruction: Instruction) -> String {
         .join(""),
         Instruction::Cdq => format!("{INDENT}cdq\n"),
         Instruction::Idiv(denominator) => {
-            format!("{INDENT}idivq {}\n", operand_to_string(denominator))
+            format!("{INDENT}idivl {}\n", operand_to_string(denominator))
         }
     }
 }

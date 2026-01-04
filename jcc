@@ -49,6 +49,11 @@ if [ ! -e "./target/release/compiler" ]; then
   cargo build -r
 fi
 ./target/release/compiler $PREPROC_PATH
+CODE=$?
+if [ $CODE -ne 0 ]; then
+  echo "Failed to compile program."
+  exit $CODE
+fi
 rm $PREPROC_PATH
 
 # If -S provided, stop after assembly output

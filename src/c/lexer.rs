@@ -4,12 +4,14 @@ use regex::Regex;
 pub enum Keyword {
     Return,
     Int,
+    Void,
 }
 
 fn lex_keyword(input: String) -> Keyword {
     match input.as_str() {
         "return" => Some(Keyword::Return),
         "int" => Some(Keyword::Int),
+        "void" => Some(Keyword::Void),
         _ => None,
     }
     .expect(&format!("{input} should be a known keyword"))
@@ -66,7 +68,7 @@ fn classify_token(token_content: &str) -> Token {
 
     let identifier_rgx = Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap();
     let constant_rgx = Regex::new(r"^[0-9]+\b$").unwrap();
-    let keyword_rgx = Regex::new(r"^(int|return)$").unwrap();
+    let keyword_rgx = Regex::new(r"^(int|return|void)$").unwrap();
 
     let content_copy: String = token_content.to_string();
 

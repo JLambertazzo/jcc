@@ -90,7 +90,15 @@ fn parse_function(parser: &mut Parser<Token>) -> Function {
     }
     .unwrap();
     eat_token_of_kind!(parser, TokenKind::OpenParenthesis);
-    eat_token_of_kind!(parser, TokenKind::CloseParenthesis);
+    let next = parser.peek();
+    if let Some(tok) = next && let Token::Keyword(Keyword::Void) = tok {
+        eat_known_token!(parser, Token::Keyword(Keyword::Void));
+        eat_token_of_kind!(parser, TokenKind::CloseParenthesis);
+    } else if let Some(tok) = next && let Token::CloseParenthesis = tok {
+        eat_token_of_kind!(parser, TokenKind::CloseParenthesis);
+    } else {
+        panic!("Unexpected token in function args")
+    }
     eat_token_of_kind!(parser, TokenKind::OpenBrace);
     let statement = parse_statement(parser);
     eat_token_of_kind!(parser, TokenKind::CloseBrace);

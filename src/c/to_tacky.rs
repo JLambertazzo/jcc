@@ -15,6 +15,11 @@ fn translate_binary_operator(op: c::ast::BinaryOperator) -> tacky::ast::BinaryOp
         c::ast::BinaryOperator::Multiply => tacky::ast::BinaryOperator::Multiply,
         c::ast::BinaryOperator::Divide => tacky::ast::BinaryOperator::Divide,
         c::ast::BinaryOperator::Modulo => tacky::ast::BinaryOperator::Modulo,
+        c::ast::BinaryOperator::LeftShift => tacky::ast::BinaryOperator::LeftShift,
+        c::ast::BinaryOperator::RightShift => tacky::ast::BinaryOperator::RightShift,
+        c::ast::BinaryOperator::BitwiseAnd => tacky::ast::BinaryOperator::BitwiseAnd,
+        c::ast::BinaryOperator::BitwiseXor => tacky::ast::BinaryOperator::BitwiseXor,
+        c::ast::BinaryOperator::BitwiseOr => tacky::ast::BinaryOperator::BitwiseOr,
     }
 }
 
@@ -29,6 +34,11 @@ fn name_binary_result(
         tacky::ast::BinaryOperator::Multiply => "Product",
         tacky::ast::BinaryOperator::Divide => "Quotient",
         tacky::ast::BinaryOperator::Modulo => "Remainder",
+        tacky::ast::BinaryOperator::LeftShift => "LeftShift",
+        tacky::ast::BinaryOperator::RightShift => "RightShift",
+        tacky::ast::BinaryOperator::BitwiseAnd => "BitAnd",
+        tacky::ast::BinaryOperator::BitwiseOr => "BitOr",
+        tacky::ast::BinaryOperator::BitwiseXor => "BitXor",
     };
     let v1_name = match v1 {
         tacky::ast::Value::Variable(name, _i) => name.to_string(),

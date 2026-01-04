@@ -13,6 +13,11 @@ fn translate_binary_op(op: tacky::BinaryOperator) -> asm::BinaryOperator {
         tacky::BinaryOperator::Add => asm::BinaryOperator::Add,
         tacky::BinaryOperator::Subtract => asm::BinaryOperator::Sub,
         tacky::BinaryOperator::Multiply => asm::BinaryOperator::Mul,
+        tacky::BinaryOperator::LeftShift => asm::BinaryOperator::Sal,
+        tacky::BinaryOperator::RightShift => asm::BinaryOperator::Sar,
+        tacky::BinaryOperator::BitwiseAnd => asm::BinaryOperator::And,
+        tacky::BinaryOperator::BitwiseXor => asm::BinaryOperator::Xor,
+        tacky::BinaryOperator::BitwiseOr => asm::BinaryOperator::Or,
         _ => panic!(
             "Operator {:?} does not have a corresponding binary operator in asm",
             op

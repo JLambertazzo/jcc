@@ -4,6 +4,8 @@ pub enum Register {
     DX,
     R10,
     R11,
+    CL,
+    CX,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -17,6 +19,11 @@ pub enum BinaryOperator {
     Add,
     Sub,
     Mul,
+    Sar,
+    Sal,
+    And,
+    Or,
+    Xor,
 }
 
 #[derive(PartialEq, Debug, Clone)]

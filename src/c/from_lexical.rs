@@ -44,6 +44,24 @@ fn parse_binary_op(parser: &mut Parser<Token>) -> BinaryOperator {
         Token::Modulo => BinaryOperator::Modulo,
         Token::Plus => BinaryOperator::Add,
         Token::Hyphen => BinaryOperator::Subtract,
+        Token::Ampersand => BinaryOperator::BitwiseAnd,
+        Token::Pipe => BinaryOperator::BitwiseOr,
+        Token::Caret => BinaryOperator::BitwiseXor,
+        // expecting two of the same bracket otherwise we have invalid input
+        Token::OpenAngleBracket | Token::CloseAngleBracket => {
+            let next_tok = parser.peek().expect("Expected a token but found None");
+            if get_token_kind(&tok) != get_token_kind(&next_tok) {
+                panic!("Expected two of same angle bracket but found {:?} and {:?}", tok, next_tok)
+            }
+            // next token is valid. eat it as well
+            parser.eat().expect("Expected token but found None.");
+
+            match get_token_kind(&tok) {
+                TokenKind::OpenAngleBracket => BinaryOperator::LeftShift,
+                TokenKind::CloseAngleBracket => BinaryOperator::RightShift,
+                _ => panic!("Unexpected change in token kind.")
+            }
+        },
         _ => panic!("Expected BinaryOperator but found {:?}", tok),
     }
 }
@@ -94,6 +112,22 @@ fn is_next_token_binary_op_no_lower_precedence(
         Token::Modulo => BinaryOperator::Modulo,
         Token::Plus => BinaryOperator::Add,
         Token::Hyphen => BinaryOperator::Subtract,
+        Token::Ampersand => BinaryOperator::BitwiseAnd,
+        Token::Pipe => BinaryOperator::BitwiseOr,
+        Token::Caret => BinaryOperator::BitwiseXor,
+        // expecting two of the same bracket otherwise we have invalid input
+        Token::OpenAngleBracket | Token::CloseAngleBracket => {
+            let next_tok = parser.peek_ahead().expect("Expected a token but found None");
+            if get_token_kind(tok) != get_token_kind(next_tok) {
+                panic!("Expected two of same angle bracket but found {:?} and {:?}", tok, next_tok)
+            }
+
+            match get_token_kind(tok) {
+                TokenKind::OpenAngleBracket => BinaryOperator::LeftShift,
+                TokenKind::CloseAngleBracket => BinaryOperator::RightShift,
+                _ => panic!("Unexpected change in token kind.")
+            }
+        },
         _ => {
             return false;
         }

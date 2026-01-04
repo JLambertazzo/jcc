@@ -11,15 +11,25 @@ pub enum BinaryOperator {
     Multiply,
     Divide,
     Modulo,
+    LeftShift,
+    RightShift,
+    BitwiseAnd,
+    BitwiseXor,
+    BitwiseOr,
 }
 
 pub fn binary_operator_precedence(operator: &BinaryOperator) -> i32 {
     match operator {
-        BinaryOperator::Multiply => 2,
-        BinaryOperator::Divide => 2,
-        BinaryOperator::Modulo => 2,
-        BinaryOperator::Add => 1,
-        BinaryOperator::Subtract => 1,
+        BinaryOperator::Multiply => 6,
+        BinaryOperator::Divide => 6,
+        BinaryOperator::Modulo => 6,
+        BinaryOperator::Add => 5,
+        BinaryOperator::Subtract => 5,
+        BinaryOperator::LeftShift => 4,
+        BinaryOperator::RightShift => 4,
+        BinaryOperator::BitwiseAnd => 3,
+        BinaryOperator::BitwiseXor => 2,
+        BinaryOperator::BitwiseOr => 1,
     }
 }
 

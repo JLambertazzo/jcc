@@ -33,6 +33,11 @@ pub enum Token {
     Star,
     Slash,
     Modulo,
+    Ampersand,
+    Pipe,  // |
+    Caret, // ^
+    OpenAngleBracket,
+    CloseAngleBracket,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -51,6 +56,11 @@ pub enum TokenKind {
     Star,
     Slash,
     Modulo,
+    Ampersand,
+    Pipe,  // |
+    Caret, // ^
+    OpenAngleBracket,
+    CloseAngleBracket,
 }
 
 pub fn get_token_kind(tok: &Token) -> TokenKind {
@@ -69,6 +79,11 @@ pub fn get_token_kind(tok: &Token) -> TokenKind {
         Token::Star => TokenKind::Star,
         Token::Slash => TokenKind::Slash,
         Token::Modulo => TokenKind::Modulo,
+        Token::Ampersand => TokenKind::Ampersand,
+        Token::Pipe => TokenKind::Pipe,
+        Token::Caret => TokenKind::Caret,
+        Token::OpenAngleBracket => TokenKind::OpenAngleBracket,
+        Token::CloseAngleBracket => TokenKind::CloseAngleBracket,
     }
 }
 
@@ -103,6 +118,11 @@ fn classify_token(token_content: &str) -> Token {
             "*" => Some(Token::Star),
             "/" => Some(Token::Slash),
             "%" => Some(Token::Modulo),
+            "&" => Some(Token::Ampersand),
+            "|" => Some(Token::Pipe),
+            "^" => Some(Token::Caret),
+            "<" => Some(Token::OpenAngleBracket),
+            ">" => Some(Token::CloseAngleBracket),
             _ => None,
         }
         .expect(&format!(

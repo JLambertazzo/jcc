@@ -27,7 +27,7 @@ fn use_scratch_register_for_idivl(
     result_instructions
 }
 
-fn use_scratch_register_for_add_sub(
+fn use_scratch_register_for_binop(
     operator: asm::BinaryOperator,
     src: asm::Operand,
     dst: asm::Operand
@@ -39,7 +39,10 @@ fn use_scratch_register_for_add_sub(
         let applying_instruction = match operator {
             asm::BinaryOperator::Add => asm::Instruction::Binary(asm::BinaryOperator::Add, asm::Operand::Register(asm::Register::R10), asm::Operand::Stack(dst_offset)),
             asm::BinaryOperator::Sub => asm::Instruction::Binary(asm::BinaryOperator::Sub, asm::Operand::Register(asm::Register::R10), asm::Operand::Stack(dst_offset)),
-            asm::BinaryOperator::Mul => panic!("Unexpected multiplication instruction while fixing add/sub instructions")
+            asm::BinaryOperator::And => asm::Instruction::Binary(asm::BinaryOperator::And, asm::Operand::Register(asm::Register::R10), asm::Operand::Stack(dst_offset)),
+            asm::BinaryOperator::Xor => asm::Instruction::Binary(asm::BinaryOperator::Xor, asm::Operand::Register(asm::Register::R10), asm::Operand::Stack(dst_offset)),
+            asm::BinaryOperator::Or => asm::Instruction::Binary(asm::BinaryOperator::Or, asm::Operand::Register(asm::Register::R10), asm::Operand::Stack(dst_offset)),
+            _ => panic!("Unexpected multiplication instruction while fixing add/sub instructions")
         };
         result_instructions.push(applying_instruction)
     } else {
@@ -47,6 +50,23 @@ fn use_scratch_register_for_add_sub(
     }
 
     result_instructions
+}
+
+// shift count should always be read from %cl
+fn use_scratch_register_for_shift(
+    operator: asm::BinaryOperator,
+    cnt: asm::Operand,
+    dst: asm::Operand,
+) -> Vec<asm::Instruction> {
+    let shift_instruction = match operator {
+        asm::BinaryOperator::Sar => asm::Instruction::Binary(asm::BinaryOperator::Sar, asm::Operand::Register(asm::Register::CL), dst),
+        asm::BinaryOperator::Sal => asm::Instruction::Binary(asm::BinaryOperator::Sal, asm::Operand::Register(asm::Register::CL), dst),
+        _ => panic!("Unexpected non-shift binary operator.")
+    };
+    vec![
+        asm::Instruction::Mov(cnt, asm::Operand::Register(asm::Register::CX)),
+        shift_instruction
+    ]
 }
 
 fn use_scratch_register_for_mul(
@@ -82,14 +102,14 @@ pub fn use_scratch_registers(
             },
             asm::Instruction::Binary(operator, src, dst) => {
                 match operator {
-                    asm::BinaryOperator::Add => {
-                        result_instructions.extend(use_scratch_register_for_add_sub(operator, src, dst))
-                    },
-                    asm::BinaryOperator::Sub => {
-                        result_instructions.extend(use_scratch_register_for_add_sub(operator, src, dst))
-                    },
                     asm::BinaryOperator::Mul => {
                         result_instructions.extend(use_scratch_register_for_mul(src, dst))
+                    },
+                    asm::BinaryOperator::Sal | asm::BinaryOperator::Sar => {
+                        result_instructions.extend(use_scratch_register_for_shift(operator, src, dst))
+                    }
+                    _ => {
+                        result_instructions.extend(use_scratch_register_for_binop(operator, src, dst))
                     }
                 }
             },

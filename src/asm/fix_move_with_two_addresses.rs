@@ -43,7 +43,7 @@ fn use_scratch_register_for_add_sub(
         };
         result_instructions.push(applying_instruction)
     } else {
-        result_instructions.push(asm::Instruction::Mov(src,dst));
+        result_instructions.push(asm::Instruction::Binary(operator, src, dst));
     }
 
     result_instructions

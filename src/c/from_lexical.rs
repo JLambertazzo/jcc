@@ -1,6 +1,6 @@
 use super::ast::*;
-use super::lexer::*;
-use super::parser::Parser;
+use crate::core::lexer::*;
+use crate::core::parser::Parser;
 
 macro_rules! eat_token_of_kind {
     ($parser:expr, $expected:expr) => {{
@@ -151,7 +151,7 @@ fn parse_expression(parser: &mut Parser<Token>) -> Expression {
 }
 
 fn parse_return(parser: &mut Parser<Token>) -> Statement {
-    eat_known_token!(parser, Token::Keyword(Keyword::Return));
+    eat_known_token!(parser, Token::Keyword(String::from("return")));
     let expr = parse_expression(parser);
     eat_token_of_kind!(parser, TokenKind::Semicolon);
 
@@ -163,7 +163,7 @@ fn parse_statement(parser: &mut Parser<Token>) -> Statement {
 }
 
 fn parse_function(parser: &mut Parser<Token>) -> Function {
-    eat_known_token!(parser, Token::Keyword(Keyword::Int));
+    eat_known_token!(parser, Token::Keyword(String::from("int")));
     let name_tok = eat_token_of_kind!(parser, TokenKind::Identifier);
     let name = match name_tok {
         Token::Identifier(name) => Ok(name),
@@ -172,8 +172,8 @@ fn parse_function(parser: &mut Parser<Token>) -> Function {
     .unwrap();
     eat_token_of_kind!(parser, TokenKind::OpenParenthesis);
     let next = parser.peek();
-    if let Some(tok) = next && let Token::Keyword(Keyword::Void) = tok {
-        eat_known_token!(parser, Token::Keyword(Keyword::Void));
+    if let Some(tok) = next && let Token::Keyword(kwd) = tok && kwd.clone() == String::from("void") {
+        eat_known_token!(parser, Token::Keyword(String::from("void")));
         eat_token_of_kind!(parser, TokenKind::CloseParenthesis);
     } else if let Some(tok) = next && let Token::CloseParenthesis = tok {
         eat_token_of_kind!(parser, TokenKind::CloseParenthesis);
@@ -202,12 +202,12 @@ mod tests {
     #[test]
     fn test_parse_program() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier(String::from("function_name")),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Constant(String::from("2")),
             Token::Semicolon,
             Token::CloseBrace,
@@ -222,15 +222,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "Expected Keyword(Int) but found Keyword(Return)"]
+    #[should_panic = "Expected Keyword(\"int\") but found Keyword(\"return\")"]
     fn panic_on_keyword_in_bad_position() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Identifier(String::from("function_name")),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Constant(String::from("2")),
             Token::Semicolon,
             Token::CloseBrace,
@@ -242,12 +242,12 @@ mod tests {
     #[should_panic = "Expected Semicolon but found Identifier(\"variable_name\")"]
     fn panic_on_unexpected_token_kind() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier(String::from("function_name")),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Constant(String::from("2")),
             Token::Identifier(String::from("variable_name")),
             Token::CloseBrace,
@@ -259,12 +259,12 @@ mod tests {
     #[should_panic = "Invalid expression. Cannot begin with OpenBrace"]
     fn panic_on_malformed_expression() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier(String::from("function_name")),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::OpenBrace,
             Token::Constant(String::from("2")),
             Token::CloseBrace,
@@ -277,12 +277,12 @@ mod tests {
     #[test]
     fn test_parse_nested_expression_program() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier(String::from("function_name")),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Hyphen,
             Token::OpenParenthesis,
             Token::Tilde,
@@ -315,12 +315,12 @@ mod tests {
     #[test]
     fn test_parse_many_binary_expressions() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier("main".to_string()),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::OpenParenthesis,
             Token::Constant(String::from("1")),
             Token::Plus,
@@ -373,12 +373,12 @@ mod tests {
     #[test]
     fn parse_binary_expression_with_nested_unary() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier("main".to_string()),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Tilde,
             Token::Constant(String::from("2")),
             Token::Plus,
@@ -409,12 +409,12 @@ mod tests {
     #[test]
     fn applies_correct_order_of_operations() {
         let program_token_vector = vec![
-            Token::Keyword(Keyword::Int),
+            Token::Keyword(String::from("int")),
             Token::Identifier("main".to_string()),
             Token::OpenParenthesis,
             Token::CloseParenthesis,
             Token::OpenBrace,
-            Token::Keyword(Keyword::Return),
+            Token::Keyword(String::from("return")),
             Token::Constant(String::from("1")),
             Token::Plus,
             Token::Constant(String::from("2")), // \

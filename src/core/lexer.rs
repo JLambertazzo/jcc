@@ -1,27 +1,10 @@
 use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Keyword {
-    Return,
-    Int,
-    Void,
-}
-
-fn lex_keyword(input: String) -> Keyword {
-    match input.as_str() {
-        "return" => Some(Keyword::Return),
-        "int" => Some(Keyword::Int),
-        "void" => Some(Keyword::Void),
-        _ => None,
-    }
-    .expect(&format!("{input} should be a known keyword"))
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
     Constant(String),
-    Keyword(Keyword),
+    Keyword(String),
     OpenParenthesis,
     CloseParenthesis,
     OpenBrace,
@@ -87,23 +70,25 @@ pub fn get_token_kind(tok: &Token) -> TokenKind {
     }
 }
 
-fn classify_token(token_content: &str) -> Token {
+pub struct LanguageSpec {
+    pub keyword_rgx: Regex,
+    pub constant_rgx: Regex,
+    pub identifier_rgx: Regex,
+}
+
+fn classify_token(token_content: &str, spec: &LanguageSpec) -> Token {
     /*
      * Given regex patterns for each token type.
      * Any other value you encounter at this point should be handled by exact match
      */
 
-    let identifier_rgx = Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap();
-    let constant_rgx = Regex::new(r"^[0-9]+\b$").unwrap();
-    let keyword_rgx = Regex::new(r"^(int|return|void)$").unwrap();
-
     let content_copy: String = token_content.to_string();
 
-    if keyword_rgx.is_match(token_content) {
-        return Token::Keyword(lex_keyword(content_copy));
-    } else if constant_rgx.is_match(token_content) {
+    if spec.keyword_rgx.is_match(token_content) {
+        return Token::Keyword(content_copy);
+    } else if spec.constant_rgx.is_match(token_content) {
         return Token::Constant(content_copy);
-    } else if identifier_rgx.is_match(token_content) {
+    } else if spec.identifier_rgx.is_match(token_content) {
         return Token::Identifier(content_copy);
     } else {
         match token_content {
@@ -131,7 +116,7 @@ fn classify_token(token_content: &str) -> Token {
     }
 }
 
-pub fn lex_contents(src_contents: String) -> Vec<Token> {
+pub fn lex_contents(src_contents: String, spec: &LanguageSpec) -> Vec<Token> {
     let mut tokens = Vec::new();
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
     let next_token_pattern = Regex::new(r"^(\w+\b|--)").unwrap();
@@ -153,7 +138,7 @@ pub fn lex_contents(src_contents: String) -> Vec<Token> {
                 };
                 // decice what to do with token
                 let token: String = contents.drain(rng).collect();
-                let classified_token = classify_token(&token);
+                let classified_token = classify_token(&token, spec);
                 tokens.push(classified_token);
             }
         }
@@ -165,15 +150,26 @@ pub fn lex_contents(src_contents: String) -> Vec<Token> {
 mod tests {
     use super::*;
 
+    fn get_c_spec() -> LanguageSpec {
+        LanguageSpec {
+            identifier_rgx: Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap(),
+            constant_rgx: Regex::new(r"^[0-9]+\b$").unwrap(),
+            keyword_rgx: Regex::new(r"^(int|return|void)$").unwrap(),
+        }
+    }
+
     #[test]
     fn test_classification() {
         macro_rules! test_classification {
             ($raw_content:literal, $expected_token_type:expr) => {
-                assert_eq!(classify_token($raw_content), $expected_token_type);
+                assert_eq!(
+                    classify_token($raw_content, &get_c_spec()),
+                    $expected_token_type
+                );
             };
         }
 
-        test_classification!("int", Token::Keyword(Keyword::Int));
+        test_classification!("int", Token::Keyword(String::from("int")));
         test_classification!("main", Token::Identifier("main".to_string()));
         test_classification!("2", Token::Constant("2".to_string()));
         test_classification!("(", Token::OpenParenthesis);
@@ -186,7 +182,7 @@ mod tests {
     #[test]
     #[should_panic = "123bar should be one of the known lexical token types"]
     fn panic_for_bad_variable() {
-        classify_token("123bar");
+        classify_token("123bar", &get_c_spec());
     }
 
     #[test]
@@ -199,6 +195,7 @@ mod tests {
                 }
             "
             .to_string(),
+            &get_c_spec(),
         );
     }
 
@@ -214,17 +211,18 @@ mod tests {
                 
             "
             .to_string(),
+            &get_c_spec(),
         );
 
         assert_eq!(
             result,
             Vec::from([
-                Token::Keyword(Keyword::Int),
+                Token::Keyword(String::from("int")),
                 Token::Identifier("main".to_string()),
                 Token::OpenParenthesis,
                 Token::CloseParenthesis,
                 Token::OpenBrace,
-                Token::Keyword(Keyword::Return),
+                Token::Keyword(String::from("return")),
                 Token::Constant("2".to_string()),
                 Token::Semicolon,
                 Token::CloseBrace,
@@ -243,17 +241,18 @@ mod tests {
 
             "
             .to_string(),
+            &get_c_spec(),
         );
 
         assert_eq!(
             result,
             Vec::from([
-                Token::Keyword(Keyword::Int),
+                Token::Keyword(String::from("int")),
                 Token::Identifier("main".to_string()),
                 Token::OpenParenthesis,
                 Token::CloseParenthesis,
                 Token::OpenBrace,
-                Token::Keyword(Keyword::Return),
+                Token::Keyword(String::from("return")),
                 Token::OpenParenthesis,
                 Token::Tilde,
                 Token::OpenParenthesis,
@@ -281,17 +280,18 @@ mod tests {
 
             "
             .to_string(),
+            &get_c_spec(),
         );
 
         assert_eq!(
             result,
             Vec::from([
-                Token::Keyword(Keyword::Int),
+                Token::Keyword(String::from("int")),
                 Token::Identifier("main".to_string()),
                 Token::OpenParenthesis,
                 Token::CloseParenthesis,
                 Token::OpenBrace,
-                Token::Keyword(Keyword::Return),
+                Token::Keyword(String::from("return")),
                 Token::OpenParenthesis,
                 Token::Constant(String::from("1")),
                 Token::Plus,

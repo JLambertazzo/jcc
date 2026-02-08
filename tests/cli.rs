@@ -30,7 +30,7 @@ fn file_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[should_panic = "Expected Keyword(Int) but found None"]
+#[should_panic = "Expected Keyword(\\\"int\\\") but found None"]
 fn empty_file() {
     let mut cmd = cargo_bin_cmd!("compiler");
     cmd.arg("tests/fixtures/input/empty_file.i");
@@ -74,7 +74,7 @@ fn ch1_bad_input_unexpected_token_kind() {
 }
 
 #[test]
-#[should_panic = "Expected Keyword(Int) but found Keyword(Return)"]
+#[should_panic = "Expected Keyword(\\\"int\\\") but found Keyword(\\\"return\\\")"]
 fn ch1_bad_input_unexpected_keyword() {
     let mut cmd = cargo_bin_cmd!("compiler");
     cmd.arg("tests/fixtures/input/ch1_bad_input_unexpected_keyword.i");

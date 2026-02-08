@@ -19,6 +19,7 @@ Logic is separated by language in separate folders. Tacky folder only defines st
 * `./src/c` processes raw text into a C AST and emits a TACKY AST
 * `./src/tacky` only defines the AST, does not currently expose logic
 * `./src/asm` turns TACKY AST into an ASM AST and emits code from an ASM AST
+* `./src/core` contains the lexer & parser engine used by the source language
 
 ## Testing Structure
 

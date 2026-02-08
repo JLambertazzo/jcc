@@ -40,7 +40,7 @@ impl<T: Clone> Parser<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::c::lexer::Token;
+    use crate::core::lexer::Token;
 
     #[test]
     #[should_panic = "custom expectation error message"]

@@ -4,6 +4,7 @@ use std::fs;
 
 mod asm;
 mod c;
+mod core;
 mod tacky;
 
 #[derive(Parser)]

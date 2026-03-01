@@ -34,22 +34,19 @@ fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
     }
 }
 
-fn parse_binary_op(parser: &mut Parser<Token>) -> BinaryOperator {
-    let tok = parser
-        .eat()
-        .expect("Expected BinaryOperator but found None");
+fn parse_binary_op(tok: &Token) -> Result<BinaryOperator, String> {
     match tok {
-        Token::Operator(LexicalOperator::Multiply) => BinaryOperator::Multiply,
-        Token::Operator(LexicalOperator::Divide) => BinaryOperator::Divide,
-        Token::Operator(LexicalOperator::Modulo) => BinaryOperator::Modulo,
-        Token::Operator(LexicalOperator::Add) => BinaryOperator::Add,
-        Token::Operator(LexicalOperator::Minus) => BinaryOperator::Subtract,
-        Token::Operator(LexicalOperator::BitwiseAnd) => BinaryOperator::BitwiseAnd,
-        Token::Operator(LexicalOperator::BitwiseOr) => BinaryOperator::BitwiseOr,
-        Token::Operator(LexicalOperator::BitwiseXor) => BinaryOperator::BitwiseXor,
-        Token::Operator(LexicalOperator::LeftShift) => BinaryOperator::LeftShift,
-        Token::Operator(LexicalOperator::RightShift) => BinaryOperator::RightShift,
-        _ => panic!("Expected BinaryOperator but found {:?}", tok),
+        Token::Operator(LexicalOperator::Multiply) => Ok(BinaryOperator::Multiply),
+        Token::Operator(LexicalOperator::Divide) => Ok(BinaryOperator::Divide),
+        Token::Operator(LexicalOperator::Modulo) => Ok(BinaryOperator::Modulo),
+        Token::Operator(LexicalOperator::Add) => Ok(BinaryOperator::Add),
+        Token::Operator(LexicalOperator::Minus) => Ok(BinaryOperator::Subtract),
+        Token::Operator(LexicalOperator::BitwiseAnd) => Ok(BinaryOperator::BitwiseAnd),
+        Token::Operator(LexicalOperator::BitwiseOr) => Ok(BinaryOperator::BitwiseOr),
+        Token::Operator(LexicalOperator::BitwiseXor) => Ok(BinaryOperator::BitwiseXor),
+        Token::Operator(LexicalOperator::LeftShift) => Ok(BinaryOperator::LeftShift),
+        Token::Operator(LexicalOperator::RightShift) => Ok(BinaryOperator::RightShift),
+        _ => Err(format!("Expected BinaryOperator but found {:?}", tok)),
     }
 }
 
@@ -93,29 +90,18 @@ fn is_next_token_binary_op_no_lower_precedence(
     min_precedence: i32,
 ) -> bool {
     let tok = parser.peek().expect("Expected a token but found None");
-    let binop = match tok {
-        Token::Operator(LexicalOperator::Multiply) => BinaryOperator::Multiply,
-        Token::Operator(LexicalOperator::Divide) => BinaryOperator::Divide,
-        Token::Operator(LexicalOperator::Modulo) => BinaryOperator::Modulo,
-        Token::Operator(LexicalOperator::Add) => BinaryOperator::Add,
-        Token::Operator(LexicalOperator::Minus) => BinaryOperator::Subtract,
-        Token::Operator(LexicalOperator::BitwiseAnd) => BinaryOperator::BitwiseAnd,
-        Token::Operator(LexicalOperator::BitwiseOr) => BinaryOperator::BitwiseOr,
-        Token::Operator(LexicalOperator::BitwiseXor) => BinaryOperator::BitwiseXor,
-        // expecting two of the same bracket otherwise we have invalid input
-        Token::Operator(LexicalOperator::LeftShift) => BinaryOperator::LeftShift,
-        Token::Operator(LexicalOperator::RightShift) => BinaryOperator::RightShift,
-        _ => {
-            return false;
-        }
-    };
-    binary_operator_precedence(&binop) >= min_precedence
+    let binop = parse_binary_op(tok);
+    match binop {
+        Ok(matched_op) => binary_operator_precedence(&matched_op) >= min_precedence,
+        Err(_) => false
+    }
 }
 
 fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: i32) -> Expression {
     let mut expr = parse_primary(parser);
     while is_next_token_binary_op_no_lower_precedence(parser, min_precedence) {
-        let operator = parse_binary_op(parser);
+        let tok = parser.eat().expect("Expected BinaryOperator but found None");
+        let operator = parse_binary_op(&tok).unwrap();
         let rhs =
             parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
         expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));

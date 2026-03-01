@@ -2,101 +2,48 @@
 
 use crate::core::{lexer, parser::Parser};
 
+/**
+ * At the lexer stage we can't yet tell the ary-ness of an operator.
+ * - could be unary or binary (-2 or 2 - 2). The advantage of this
+ * extra lexical layer is to apply C-specific groupings. For example,
+ * preferring >= over >. It's a quick pass over the generic lexer that
+ * allows the core lexer to stay generic and the parser to avoid lookaheads.
+ */
+#[derive(Debug, PartialEq, Clone)]
+pub enum LexicalOperator {
+    Complement,
+    LogicalNot,
+    Add,
+    Minus, // could be Negation or Minus
+    Multiply,
+    Divide,
+    Modulo,
+    LeftShift,
+    RightShift,
+    BitwiseAnd,
+    BitwiseXor,
+    BitwiseOr,
+    LessThan,
+    LessThanEqual,
+    GreaterThan,
+    GreaterThanEqual,
+    LogicalAnd,
+    LogicalOr,
+    NotEqual,
+    EqualTo,
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
     Constant(String),
     Keyword(String),
+    Operator(LexicalOperator),
     OpenParenthesis,  // (
     CloseParenthesis, // )
     OpenBrace,        // {
     CloseBrace,       // }
     Semicolon,        // ;
-    BitwiseNegation,  // ~
-    Minus,            // -
-    Plus,             // +
-    Star,             // * no semantic meaning yet, could be times or ptr deref
-    Divide,           // /
-    Modulo,           // %
-    BitwiseAnd,       // &
-    BitwiseOr,        // |
-    BitwiseXor,       // ^
-    LessThan,         // <
-    LessThanEqual,    // <=
-    LeftShift,        // <<
-    GreaterThan,      // >
-    GreaterThanEqual, // >=
-    RightShift,       // >>
-    LogicalNot,       // !
-    NotEqual,         // !=
-    EqualTo,          // ==
-    LogicalAnd,       // &&
-    LogicalOr,        // ||
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TokenKind {
-    Identifier,
-    Constant,
-    Keyword,
-    OpenParenthesis,  // (
-    CloseParenthesis, // )
-    OpenBrace,        // {
-    CloseBrace,       // }
-    Semicolon,        // ;
-    BitwiseNegation,  // ~
-    Minus,            // -
-    Plus,             // +
-    Star,             // * no semantic meaning yet, could be times or ptr deref
-    Divide,           // /
-    Modulo,           // %
-    BitwiseAnd,       // &
-    BitwiseOr,        // |
-    BitwiseXor,       // ^
-    LessThan,         // <
-    LessThanEqual,    // <=
-    LeftShift,        // <<
-    GreaterThan,      // >
-    GreaterThanEqual, // >=
-    RightShift,       // >>
-    LogicalNot,       // !
-    NotEqual,         // !=
-    EqualTo,          // ==
-    LogicalAnd,       // &&
-    LogicalOr,        // ||
-}
-
-pub fn get_token_kind(tok: &Token) -> TokenKind {
-    match tok {
-        Token::Identifier(_) => TokenKind::Identifier,
-        Token::Constant(_) => TokenKind::Constant,
-        Token::Keyword(_) => TokenKind::Keyword,
-        Token::OpenParenthesis => TokenKind::OpenParenthesis,
-        Token::CloseParenthesis => TokenKind::CloseParenthesis,
-        Token::OpenBrace => TokenKind::OpenBrace,
-        Token::CloseBrace => TokenKind::CloseBrace,
-        Token::Semicolon => TokenKind::Semicolon,
-        Token::BitwiseNegation => TokenKind::BitwiseNegation,
-        Token::Minus => TokenKind::Minus,
-        Token::Plus => TokenKind::Plus,
-        Token::Star => TokenKind::Star,
-        Token::Divide => TokenKind::Divide,
-        Token::Modulo => TokenKind::Modulo,
-        Token::BitwiseAnd => TokenKind::BitwiseAnd,
-        Token::BitwiseOr => TokenKind::BitwiseOr,
-        Token::BitwiseXor => TokenKind::BitwiseXor,
-        Token::LessThan => TokenKind::LessThan,
-        Token::LessThanEqual => TokenKind::LessThanEqual,
-        Token::GreaterThan => TokenKind::GreaterThan,
-        Token::GreaterThanEqual => TokenKind::GreaterThanEqual,
-        Token::LogicalNot => TokenKind::LogicalNot,
-        Token::NotEqual => TokenKind::NotEqual,
-        Token::EqualTo => TokenKind::EqualTo,
-        Token::LogicalAnd => TokenKind::LogicalAnd,
-        Token::LogicalOr => TokenKind::LogicalOr,
-        Token::LeftShift => TokenKind::LeftShift,
-        Token::RightShift => TokenKind::RightShift,
-    }
 }
 
 pub fn refine_lexical_token(input: Vec<lexer::Token>) -> Vec<Token> {
@@ -112,60 +59,60 @@ pub fn refine_lexical_token(input: Vec<lexer::Token>) -> Vec<Token> {
             lexer::Token::OpenBrace => Token::OpenBrace,
             lexer::Token::CloseBrace => Token::CloseBrace,
             lexer::Token::Semicolon => Token::Semicolon,
-            lexer::Token::Tilde => Token::BitwiseNegation,
-            lexer::Token::Hyphen => Token::Minus,
-            lexer::Token::Plus => Token::Plus,
-            lexer::Token::Star => Token::Star,
-            lexer::Token::Slash => Token::Divide,
-            lexer::Token::Modulo => Token::Modulo,
+            lexer::Token::Tilde => Token::Operator(LexicalOperator::Complement),
+            lexer::Token::Hyphen => Token::Operator(LexicalOperator::Minus),
+            lexer::Token::Plus => Token::Operator(LexicalOperator::Add),
+            lexer::Token::Star => Token::Operator(LexicalOperator::Multiply),
+            lexer::Token::Slash => Token::Operator(LexicalOperator::Divide),
+            lexer::Token::Modulo => Token::Operator(LexicalOperator::Modulo),
             lexer::Token::Ampersand => match parser.peek() {
                 Some(&lexer::Token::Ampersand) => {
                     parser.eat();
-                    Token::LogicalAnd
+                    Token::Operator(LexicalOperator::LogicalAnd)
                 }
-                _ => Token::BitwiseAnd,
+                _ => Token::Operator(LexicalOperator::BitwiseAnd),
             },
             lexer::Token::Pipe => match parser.peek() {
                 Some(&lexer::Token::Pipe) => {
                     parser.eat();
-                    Token::LogicalOr
+                    Token::Operator(LexicalOperator::LogicalOr)
                 }
-                _ => Token::BitwiseOr,
+                _ => Token::Operator(LexicalOperator::BitwiseOr),
             },
-            lexer::Token::Caret => Token::BitwiseXor,
+            lexer::Token::Caret => Token::Operator(LexicalOperator::BitwiseXor),
             lexer::Token::OpenAngleBracket => match parser.peek() {
                 Some(&lexer::Token::EqualSign) => {
                     parser.eat();
-                    Token::LessThanEqual
+                    Token::Operator(LexicalOperator::LessThanEqual)
                 }
                 Some(&lexer::Token::OpenAngleBracket) => {
                     parser.eat();
-                    Token::LeftShift
+                    Token::Operator(LexicalOperator::LeftShift)
                 }
-                _ => Token::LessThan,
+                _ => Token::Operator(LexicalOperator::LessThan),
             },
             lexer::Token::CloseAngleBracket => match parser.peek() {
                 Some(&lexer::Token::EqualSign) => {
                     parser.eat();
-                    Token::GreaterThanEqual
+                    Token::Operator(LexicalOperator::GreaterThanEqual)
                 }
                 Some(&lexer::Token::CloseParenthesis) => {
                     parser.eat();
-                    Token::RightShift
+                    Token::Operator(LexicalOperator::RightShift)
                 }
-                _ => Token::GreaterThan,
+                _ => Token::Operator(LexicalOperator::GreaterThan),
             },
             lexer::Token::ExclamationMark => match parser.peek() {
                 Some(&lexer::Token::EqualSign) => {
                     parser.eat();
-                    Token::NotEqual
+                    Token::Operator(LexicalOperator::NotEqual)
                 }
-                _ => Token::LogicalNot,
+                _ => Token::Operator(LexicalOperator::LogicalNot),
             },
             lexer::Token::EqualSign => match parser.peek() {
                 Some(&lexer::Token::EqualSign) => {
                     parser.eat();
-                    Token::EqualTo
+                    Token::Operator(LexicalOperator::EqualTo)
                 }
                 _ => panic!("Unsupported token ="),
             },

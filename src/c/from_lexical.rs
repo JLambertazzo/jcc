@@ -1,5 +1,5 @@
 use super::ast::*;
-use crate::core::lexer::*;
+use super::refine_lexical::*;
 use crate::core::parser::Parser;
 
 macro_rules! eat_token_of_kind {
@@ -28,8 +28,8 @@ macro_rules! eat_known_token {
 fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
     let tok = parser.eat().expect("Expected UnaryOperator but found None");
     match tok {
-        Token::Tilde => UnaryOperator::Complement,
-        Token::Hyphen => UnaryOperator::Negation,
+        Token::BitwiseNegation => UnaryOperator::Complement,
+        Token::Minus => UnaryOperator::Negation,
         _ => panic!("Expected UnaryOperator but found {:?}", tok),
     }
 }
@@ -40,28 +40,15 @@ fn parse_binary_op(parser: &mut Parser<Token>) -> BinaryOperator {
         .expect("Expected BinaryOperator but found None");
     match tok {
         Token::Star => BinaryOperator::Multiply,
-        Token::Slash => BinaryOperator::Divide,
+        Token::Divide => BinaryOperator::Divide,
         Token::Modulo => BinaryOperator::Modulo,
         Token::Plus => BinaryOperator::Add,
-        Token::Hyphen => BinaryOperator::Subtract,
-        Token::Ampersand => BinaryOperator::BitwiseAnd,
-        Token::Pipe => BinaryOperator::BitwiseOr,
-        Token::Caret => BinaryOperator::BitwiseXor,
-        // expecting two of the same bracket otherwise we have invalid input
-        Token::OpenAngleBracket | Token::CloseAngleBracket => {
-            let next_tok = parser.peek().expect("Expected a token but found None");
-            if get_token_kind(&tok) != get_token_kind(&next_tok) {
-                panic!("Expected two of same angle bracket but found {:?} and {:?}", tok, next_tok)
-            }
-            // next token is valid. eat it as well
-            parser.eat().expect("Expected token but found None.");
-
-            match get_token_kind(&tok) {
-                TokenKind::OpenAngleBracket => BinaryOperator::LeftShift,
-                TokenKind::CloseAngleBracket => BinaryOperator::RightShift,
-                _ => panic!("Unexpected change in token kind.")
-            }
-        },
+        Token::Minus => BinaryOperator::Subtract,
+        Token::BitwiseAnd => BinaryOperator::BitwiseAnd,
+        Token::BitwiseOr => BinaryOperator::BitwiseOr,
+        Token::BitwiseXor => BinaryOperator::BitwiseXor,
+        Token::LeftShift => BinaryOperator::LeftShift,
+        Token::RightShift => BinaryOperator::RightShift,
         _ => panic!("Expected BinaryOperator but found {:?}", tok),
     }
 }
@@ -86,7 +73,7 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
         .expect("Expected expression but no token found");
     match get_token_kind(next_tok) {
         TokenKind::Constant => parse_constant(parser),
-        TokenKind::Tilde | TokenKind::Hyphen => {
+        TokenKind::BitwiseNegation | TokenKind::Minus => {
             let op = parse_unary_op(parser);
             let expr = parse_primary(parser);
             Expression::Unary(op, Box::new(expr))
@@ -108,26 +95,16 @@ fn is_next_token_binary_op_no_lower_precedence(
     let tok = parser.peek().expect("Expected a token but found None");
     let binop = match tok {
         Token::Star => BinaryOperator::Multiply,
-        Token::Slash => BinaryOperator::Divide,
+        Token::Divide => BinaryOperator::Divide,
         Token::Modulo => BinaryOperator::Modulo,
         Token::Plus => BinaryOperator::Add,
-        Token::Hyphen => BinaryOperator::Subtract,
-        Token::Ampersand => BinaryOperator::BitwiseAnd,
-        Token::Pipe => BinaryOperator::BitwiseOr,
-        Token::Caret => BinaryOperator::BitwiseXor,
+        Token::Minus => BinaryOperator::Subtract,
+        Token::BitwiseAnd => BinaryOperator::BitwiseAnd,
+        Token::BitwiseOr => BinaryOperator::BitwiseOr,
+        Token::BitwiseXor => BinaryOperator::BitwiseXor,
         // expecting two of the same bracket otherwise we have invalid input
-        Token::OpenAngleBracket | Token::CloseAngleBracket => {
-            let next_tok = parser.peek_ahead().expect("Expected a token but found None");
-            if get_token_kind(tok) != get_token_kind(next_tok) {
-                panic!("Expected two of same angle bracket but found {:?} and {:?}", tok, next_tok)
-            }
-
-            match get_token_kind(tok) {
-                TokenKind::OpenAngleBracket => BinaryOperator::LeftShift,
-                TokenKind::CloseAngleBracket => BinaryOperator::RightShift,
-                _ => panic!("Unexpected change in token kind.")
-            }
-        },
+        Token::LeftShift => BinaryOperator::LeftShift,
+        Token::RightShift => BinaryOperator::RightShift,
         _ => {
             return false;
         }
@@ -283,11 +260,11 @@ mod tests {
             Token::CloseParenthesis,
             Token::OpenBrace,
             Token::Keyword(String::from("return")),
-            Token::Hyphen,
+            Token::Minus,
             Token::OpenParenthesis,
-            Token::Tilde,
+            Token::BitwiseNegation,
             Token::OpenParenthesis,
-            Token::Hyphen,
+            Token::Minus,
             Token::Constant(String::from("2")),
             Token::CloseParenthesis,
             Token::CloseParenthesis,
@@ -329,10 +306,10 @@ mod tests {
             Token::Star,
             Token::OpenParenthesis,
             Token::Constant(String::from("4")),
-            Token::Hyphen,
+            Token::Minus,
             Token::Constant(String::from("3")),
             Token::CloseParenthesis,
-            Token::Slash,
+            Token::Divide,
             Token::OpenParenthesis,
             Token::Constant(String::from("3")),
             Token::Modulo,
@@ -379,10 +356,10 @@ mod tests {
             Token::CloseParenthesis,
             Token::OpenBrace,
             Token::Keyword(String::from("return")),
-            Token::Tilde,
+            Token::BitwiseNegation,
             Token::Constant(String::from("2")),
             Token::Plus,
-            Token::Hyphen,
+            Token::Minus,
             Token::Constant(String::from("3")),
             Token::Semicolon,
             Token::CloseBrace,
@@ -420,15 +397,15 @@ mod tests {
             Token::Constant(String::from("2")), // \
             Token::Star,
             Token::Constant(String::from("3")), // /
-            Token::Hyphen,
+            Token::Minus,
             Token::Constant(String::from("4")), // \
-            Token::Slash,
+            Token::Divide,
             Token::Constant(String::from("5")), // /
             Token::Plus,
             Token::Constant(String::from("6")), // \
             Token::Modulo,
             Token::Constant(String::from("7")), // /
-            Token::Hyphen,
+            Token::Minus,
             Token::Constant(String::from("1")),
             Token::Semicolon,
             Token::CloseBrace,

@@ -5,6 +5,9 @@ USAGE_STR="Usage: jcc [-h | --help][-S][--lex | --parse | --codegen] path/to/cod
 # Parse cli options
 OUTPUT_ASSEMBLY=0
 
+# Pass stage flag to compiler
+COMPILER_STEP_FLAG=""
+
 if ! vars=$(getopt -o Sh -l "lex,parse,codegen,help" -- "$@"); then
   exit 1
 fi
@@ -22,9 +25,22 @@ do
     "--") # marks end of opts. break from loop
       break
       ;;
-    *)
-      echo Valid option $var is not yet handled
+    "--lex")
+      COMPILER_STEP_FLAG="--lex"
       shift
+      ;;
+    "--parse")
+      COMPILER_STEP_FLAG="--parse"
+      shift
+      ;;
+    "--codegen")
+      COMPILER_STEP_FLAG="--codegen"
+      shift
+      ;;
+    *)
+      echo "Unknown option detected"
+      echo $USAGE_STR
+      exit 1
       ;;
   esac
 done
@@ -48,7 +64,7 @@ ASSEMBLY_PATH="${BASE_PATH}.s"
 if [ ! -e "./target/release/compiler" ]; then
   cargo build -r
 fi
-./target/release/compiler $PREPROC_PATH
+./target/release/compiler $PREPROC_PATH $COMPILER_STEP_FLAG
 CODE=$?
 if [ $CODE -ne 0 ]; then
   echo "Failed to compile program."

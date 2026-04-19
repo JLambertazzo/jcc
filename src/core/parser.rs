@@ -27,6 +27,14 @@ impl<T: Clone> Parser<T> {
     pub fn peek(&self) -> Option<&T> {
         self.tokens.get(self.cursor)
     }
+
+    /**
+     * Return a reference to the lexical token after the value under the cursor
+     * Does not consume any value
+     */
+    pub fn peek_ahead(&self) -> Option<&T> {
+        self.tokens.get(self.cursor + 1)
+    }
 }
 
 #[cfg(test)]

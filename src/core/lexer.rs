@@ -23,53 +23,6 @@ pub enum Token {
     CloseAngleBracket,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum TokenKind {
-    Identifier,
-    Constant,
-    Keyword,
-    OpenParenthesis,
-    CloseParenthesis,
-    OpenBrace,
-    CloseBrace,
-    Semicolon,
-    Tilde,
-    Hyphen,
-    Plus,
-    Star,
-    Slash,
-    Modulo,
-    Ampersand,
-    Pipe,  // |
-    Caret, // ^
-    OpenAngleBracket,
-    CloseAngleBracket,
-}
-
-pub fn get_token_kind(tok: &Token) -> TokenKind {
-    match tok {
-        Token::Identifier(_) => TokenKind::Identifier,
-        Token::Constant(_) => TokenKind::Constant,
-        Token::Keyword(_) => TokenKind::Keyword,
-        Token::OpenParenthesis => TokenKind::OpenParenthesis,
-        Token::CloseParenthesis => TokenKind::CloseParenthesis,
-        Token::OpenBrace => TokenKind::OpenBrace,
-        Token::CloseBrace => TokenKind::CloseBrace,
-        Token::Semicolon => TokenKind::Semicolon,
-        Token::Tilde => TokenKind::Tilde,
-        Token::Hyphen => TokenKind::Hyphen,
-        Token::Plus => TokenKind::Plus,
-        Token::Star => TokenKind::Star,
-        Token::Slash => TokenKind::Slash,
-        Token::Modulo => TokenKind::Modulo,
-        Token::Ampersand => TokenKind::Ampersand,
-        Token::Pipe => TokenKind::Pipe,
-        Token::Caret => TokenKind::Caret,
-        Token::OpenAngleBracket => TokenKind::OpenAngleBracket,
-        Token::CloseAngleBracket => TokenKind::CloseAngleBracket,
-    }
-}
-
 pub struct LanguageSpec {
     pub keyword_rgx: Regex,
     pub constant_rgx: Regex,

@@ -1,6 +1,6 @@
 use clap::Parser;
 use regex::Regex;
-use std::{fs, process};
+use std::fs;
 
 mod asm;
 mod c;
@@ -23,15 +23,9 @@ fn main() {
     let input_path = cli.filepath.as_str();
     let contents = fs::read_to_string(input_path)
         .expect(&format!("Failed to read input file {:?}", input_path));
-    let c_program = c::process_program(contents, cli.lex);
-    if cli.parse {
-        process::exit(0);
-    }
+    let c_program = c::process_program(contents);
     let tacky_program = c::to_tacky::translate_program(c_program);
     let asm_output = asm::tacky_program_to_asm_code(tacky_program);
-    if cli.codegen {
-        process::exit(0);
-    }
     let output_path = Regex::new(r"\.i$")
         .unwrap()
         .replace(input_path, ".s")

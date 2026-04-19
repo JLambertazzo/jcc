@@ -239,7 +239,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "Expected Semicolon but found Identifier(\"variable_name\")"]
+    #[should_panic = "Expected \"Token::Semicolon\" but found Identifier(\"variable_name\")"]
     fn panic_on_unexpected_token_kind() {
         let program_token_vector = vec![
             Token::Keyword(String::from("int")),

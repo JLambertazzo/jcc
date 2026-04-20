@@ -25,12 +25,12 @@ macro_rules! eat_known_token {
     };
 }
 
-fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
-    let tok = parser.eat().expect("Expected UnaryOperator but found None");
+fn translate_tok_to_unop(tok: &Token) -> Option<UnaryOperator> {
     match tok {
-        Token::Tilde => UnaryOperator::Complement,
-        Token::Hyphen => UnaryOperator::Negation,
-        _ => panic!("Expected UnaryOperator but found {:?}", tok),
+        Token::Tilde => Some(UnaryOperator::Complement),
+        Token::Hyphen => Some(UnaryOperator::Negation),
+        Token::ExclamationPoint => Some(UnaryOperator::Not),
+        _ => None,
     }
 }
 
@@ -46,6 +46,14 @@ fn translate_tok_to_binop(tok: &Token) -> Option<BinaryOperator> {
         Token::Caret => Some(BinaryOperator::BitwiseXor),
         Token::DoubleOpenAngleBracket => Some(BinaryOperator::LeftShift),
         Token::DoubleCloseAngleBracket => Some(BinaryOperator::RightShift),
+        Token::DoubleAmpersand => Some(BinaryOperator::LogicalAnd),
+        Token::DoublePipe => Some(BinaryOperator::LogicalOr),
+        Token::DoubleEqual => Some(BinaryOperator::Equal),
+        Token::NotEqual => Some(BinaryOperator::NotEqual),
+        Token::OpenAngleBracket => Some(BinaryOperator::LessThan),
+        Token::LessThanEqual => Some(BinaryOperator::LessThanOrEqual),
+        Token::CloseAngleBracket => Some(BinaryOperator::GreaterThan),
+        Token::GreaterThanEqual => Some(BinaryOperator::GreaterThanOrEqual),
         _ => None,
     }
 }
@@ -70,18 +78,21 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
         .expect("Expected expression but no token found");
     match next_tok {
         Token::Constant(_) => parse_constant(parser),
-        Token::Tilde | Token::Hyphen => {
-            let op = parse_unary_op(parser);
-            let expr = parse_primary(parser);
-            Expression::Unary(op, Box::new(expr))
-        }
         Token::OpenParenthesis => {
             eat_known_token!(parser, Token::OpenParenthesis);
             let expr = parse_expression(parser);
             eat_known_token!(parser, Token::CloseParenthesis);
             expr
         }
-        _ => panic!("Invalid expression. Cannot begin with {:?}", next_tok),
+        _ => {
+            let tok = parser.eat().expect("Expected start of expression but found None.");
+            let maybe_unop = translate_tok_to_unop(&tok);
+            if let Some(unop) = maybe_unop {
+                let expr = parse_primary(parser);
+                return Expression::Unary(unop, Box::new(expr))
+            }
+            panic!("Invalid expression. Cannot begin with {:?}", tok)
+        }
     }
 }
 

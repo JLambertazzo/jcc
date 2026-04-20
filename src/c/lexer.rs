@@ -21,6 +21,17 @@ pub enum Token {
     Caret, // ^
     OpenAngleBracket,
     CloseAngleBracket,
+    DoubleOpenAngleBracket,  // <<
+    DoubleCloseAngleBracket, // >>
+    _Decrement,              // -- currently unsupported, will panic
+    ExclamationPoint,
+    EqualSign,
+    DoubleAmpersand,  // &&
+    DoublePipe,       // ||
+    DoubleEqual,      // ==
+    NotEqual,         // !=
+    LessThanEqual,    // <=
+    GreaterThanEqual, // >=
 }
 
 fn classify_token(token_content: &str) -> Token {
@@ -58,6 +69,19 @@ fn classify_token(token_content: &str) -> Token {
             "^" => Some(Token::Caret),
             "<" => Some(Token::OpenAngleBracket),
             ">" => Some(Token::CloseAngleBracket),
+            "<<" => Some(Token::DoubleOpenAngleBracket),
+            ">>" => Some(Token::DoubleCloseAngleBracket),
+            "!" => Some(Token::ExclamationPoint),
+            "=" => Some(Token::EqualSign),
+            "--" => {
+                panic!("-- should be one of the known lexical token types")
+            }
+            "&&" => Some(Token::DoubleAmpersand),
+            "||" => Some(Token::DoublePipe),
+            "==" => Some(Token::DoubleEqual),
+            "!=" => Some(Token::NotEqual),
+            "<=" => Some(Token::LessThanEqual),
+            ">=" => Some(Token::GreaterThanEqual),
             _ => None,
         }
         .expect(&format!(
@@ -69,7 +93,7 @@ fn classify_token(token_content: &str) -> Token {
 pub fn lex_contents(src_contents: String) -> Vec<Token> {
     let mut tokens = Vec::new();
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
-    let next_token_pattern = Regex::new(r"^(\w+\b|--)").unwrap();
+    let next_token_pattern = Regex::new(r"^(\w+\b|--|==|!=|\|\||&&|<<|>>|<=|>=)").unwrap();
 
     let mut contents: String = src_contents.clone();
 

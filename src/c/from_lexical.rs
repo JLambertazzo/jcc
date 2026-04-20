@@ -34,35 +34,19 @@ fn parse_unary_op(parser: &mut Parser<Token>) -> UnaryOperator {
     }
 }
 
-fn parse_binary_op(parser: &mut Parser<Token>) -> BinaryOperator {
-    let tok = parser
-        .eat()
-        .expect("Expected BinaryOperator but found None");
+fn translate_tok_to_binop(tok: &Token) -> Option<BinaryOperator> {
     match tok {
-        Token::Star => BinaryOperator::Multiply,
-        Token::Slash => BinaryOperator::Divide,
-        Token::Modulo => BinaryOperator::Modulo,
-        Token::Plus => BinaryOperator::Add,
-        Token::Hyphen => BinaryOperator::Subtract,
-        Token::Ampersand => BinaryOperator::BitwiseAnd,
-        Token::Pipe => BinaryOperator::BitwiseOr,
-        Token::Caret => BinaryOperator::BitwiseXor,
-        // expecting two of the same bracket otherwise we have invalid input
-        Token::OpenAngleBracket | Token::CloseAngleBracket => {
-            let next_tok = parser.peek().expect("Expected a token but found None");
-            if &tok != next_tok {
-                panic!("Expected two of same angle bracket but found {:?} and {:?}", tok, next_tok)
-            }
-            // next token is valid. eat it as well
-            parser.eat().expect("Expected token but found None.");
-
-            match &tok {
-                Token::OpenAngleBracket => BinaryOperator::LeftShift,
-                Token::CloseAngleBracket => BinaryOperator::RightShift,
-                _ => panic!("Unexpected change in token kind.")
-            }
-        },
-        _ => panic!("Expected BinaryOperator but found {:?}", tok),
+        Token::Star => Some(BinaryOperator::Multiply),
+        Token::Slash => Some(BinaryOperator::Divide),
+        Token::Modulo => Some(BinaryOperator::Modulo),
+        Token::Plus => Some(BinaryOperator::Add),
+        Token::Hyphen => Some(BinaryOperator::Subtract),
+        Token::Ampersand => Some(BinaryOperator::BitwiseAnd),
+        Token::Pipe => Some(BinaryOperator::BitwiseOr),
+        Token::Caret => Some(BinaryOperator::BitwiseXor),
+        Token::DoubleOpenAngleBracket => Some(BinaryOperator::LeftShift),
+        Token::DoubleCloseAngleBracket => Some(BinaryOperator::RightShift),
+        _ => None,
     }
 }
 
@@ -106,39 +90,18 @@ fn is_next_token_binary_op_no_lower_precedence(
     min_precedence: i32,
 ) -> bool {
     let tok = parser.peek().expect("Expected a token but found None");
-    let binop = match tok {
-        Token::Star => BinaryOperator::Multiply,
-        Token::Slash => BinaryOperator::Divide,
-        Token::Modulo => BinaryOperator::Modulo,
-        Token::Plus => BinaryOperator::Add,
-        Token::Hyphen => BinaryOperator::Subtract,
-        Token::Ampersand => BinaryOperator::BitwiseAnd,
-        Token::Pipe => BinaryOperator::BitwiseOr,
-        Token::Caret => BinaryOperator::BitwiseXor,
-        // expecting two of the same bracket otherwise we have invalid input
-        Token::OpenAngleBracket | Token::CloseAngleBracket => {
-            let next_tok = parser.peek_ahead().expect("Expected a token but found None");
-            if tok != next_tok {
-                panic!("Expected two of same angle bracket but found {:?} and {:?}", tok, next_tok)
-            }
-
-            match tok {
-                Token::OpenAngleBracket => BinaryOperator::LeftShift,
-                Token::CloseAngleBracket => BinaryOperator::RightShift,
-                _ => panic!("Unexpected change in token kind.")
-            }
-        },
-        _ => {
-            return false;
-        }
-    };
-    binary_operator_precedence(&binop) >= min_precedence
+    let binop = translate_tok_to_binop(&tok);
+    if let Some(binop_val) = binop {
+        return binary_operator_precedence(&binop_val) >= min_precedence;
+    }
+    return false;
 }
 
 fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: i32) -> Expression {
     let mut expr = parse_primary(parser);
     while is_next_token_binary_op_no_lower_precedence(parser, min_precedence) {
-        let operator = parse_binary_op(parser);
+        let tok = parser.eat().expect("Expected binary operator but found None.");
+        let operator = translate_tok_to_binop(&tok).expect(format!("Expected binary operator but found {:?}", tok).as_str());
         let rhs =
             parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
         expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));

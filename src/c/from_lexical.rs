@@ -1,5 +1,5 @@
 use super::ast::*;
-use crate::core::lexer::*;
+use super::lexer::*;
 use crate::core::parser::Parser;
 
 macro_rules! eat_token_of_kind {

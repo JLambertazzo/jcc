@@ -23,25 +23,22 @@ pub enum Token {
     CloseAngleBracket,
 }
 
-pub struct LanguageSpec {
-    pub keyword_rgx: Regex,
-    pub constant_rgx: Regex,
-    pub identifier_rgx: Regex,
-}
-
-fn classify_token(token_content: &str, spec: &LanguageSpec) -> Token {
+fn classify_token(token_content: &str) -> Token {
     /*
      * Given regex patterns for each token type.
      * Any other value you encounter at this point should be handled by exact match
      */
 
     let content_copy: String = token_content.to_string();
+    let identifier_rgx = Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap();
+    let constant_rgx = Regex::new(r"^[0-9]+\b$").unwrap();
+    let keyword_rgx = Regex::new(r"^(int|return|void)$").unwrap();
 
-    if spec.keyword_rgx.is_match(token_content) {
+    if keyword_rgx.is_match(token_content) {
         return Token::Keyword(content_copy);
-    } else if spec.constant_rgx.is_match(token_content) {
+    } else if constant_rgx.is_match(token_content) {
         return Token::Constant(content_copy);
-    } else if spec.identifier_rgx.is_match(token_content) {
+    } else if identifier_rgx.is_match(token_content) {
         return Token::Identifier(content_copy);
     } else {
         match token_content {
@@ -69,7 +66,7 @@ fn classify_token(token_content: &str, spec: &LanguageSpec) -> Token {
     }
 }
 
-pub fn lex_contents(src_contents: String, spec: &LanguageSpec) -> Vec<Token> {
+pub fn lex_contents(src_contents: String) -> Vec<Token> {
     let mut tokens = Vec::new();
     let starting_whitespace_pattern = Regex::new(r"^\s+").unwrap();
     let next_token_pattern = Regex::new(r"^(\w+\b|--)").unwrap();
@@ -91,7 +88,7 @@ pub fn lex_contents(src_contents: String, spec: &LanguageSpec) -> Vec<Token> {
                 };
                 // decice what to do with token
                 let token: String = contents.drain(rng).collect();
-                let classified_token = classify_token(&token, spec);
+                let classified_token = classify_token(&token);
                 tokens.push(classified_token);
             }
         }
@@ -103,22 +100,11 @@ pub fn lex_contents(src_contents: String, spec: &LanguageSpec) -> Vec<Token> {
 mod tests {
     use super::*;
 
-    fn get_c_spec() -> LanguageSpec {
-        LanguageSpec {
-            identifier_rgx: Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap(),
-            constant_rgx: Regex::new(r"^[0-9]+\b$").unwrap(),
-            keyword_rgx: Regex::new(r"^(int|return|void)$").unwrap(),
-        }
-    }
-
     #[test]
     fn test_classification() {
         macro_rules! test_classification {
             ($raw_content:literal, $expected_token_type:expr) => {
-                assert_eq!(
-                    classify_token($raw_content, &get_c_spec()),
-                    $expected_token_type
-                );
+                assert_eq!(classify_token($raw_content), $expected_token_type);
             };
         }
 
@@ -135,7 +121,7 @@ mod tests {
     #[test]
     #[should_panic = "123bar should be one of the known lexical token types"]
     fn panic_for_bad_variable() {
-        classify_token("123bar", &get_c_spec());
+        classify_token("123bar");
     }
 
     #[test]
@@ -148,7 +134,6 @@ mod tests {
                 }
             "
             .to_string(),
-            &get_c_spec(),
         );
     }
 
@@ -164,7 +149,6 @@ mod tests {
                 
             "
             .to_string(),
-            &get_c_spec(),
         );
 
         assert_eq!(
@@ -194,7 +178,6 @@ mod tests {
 
             "
             .to_string(),
-            &get_c_spec(),
         );
 
         assert_eq!(
@@ -233,7 +216,6 @@ mod tests {
 
             "
             .to_string(),
-            &get_c_spec(),
         );
 
         assert_eq!(

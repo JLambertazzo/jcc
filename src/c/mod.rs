@@ -1,21 +1,14 @@
 mod ast;
 mod from_lexical;
+pub mod lexer;
 pub mod to_tacky;
 
-use crate::core::{lexer, parser};
-use regex::Regex;
+use crate::core::parser;
 
 use std::process;
 
 pub fn process_program(input: String, lex_only: bool) -> ast::Program {
-    let tokens = lexer::lex_contents(
-        input,
-        &lexer::LanguageSpec {
-            identifier_rgx: Regex::new(r"^[a-zA-Z_]\w*\b$").unwrap(),
-            constant_rgx: Regex::new(r"^[0-9]+\b$").unwrap(),
-            keyword_rgx: Regex::new(r"^(int|return|void)$").unwrap(),
-        },
-    );
+    let tokens = lexer::lex_contents(input);
     if lex_only {
         // stop here & mark as success if we only want lexing
         process::exit(0);

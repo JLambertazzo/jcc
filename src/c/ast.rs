@@ -20,16 +20,16 @@ pub enum BinaryOperator {
 
 pub fn binary_operator_precedence(operator: &BinaryOperator) -> i32 {
     match operator {
-        BinaryOperator::Multiply => 6,
-        BinaryOperator::Divide => 6,
-        BinaryOperator::Modulo => 6,
-        BinaryOperator::Add => 5,
-        BinaryOperator::Subtract => 5,
-        BinaryOperator::LeftShift => 4,
-        BinaryOperator::RightShift => 4,
-        BinaryOperator::BitwiseAnd => 3,
-        BinaryOperator::BitwiseXor => 2,
-        BinaryOperator::BitwiseOr => 1,
+        BinaryOperator::Multiply => 50,
+        BinaryOperator::Divide => 50,
+        BinaryOperator::Modulo => 50,
+        BinaryOperator::Add => 45,
+        BinaryOperator::Subtract => 45,
+        BinaryOperator::LeftShift => 40,
+        BinaryOperator::RightShift => 40,
+        BinaryOperator::BitwiseAnd => 25,
+        BinaryOperator::BitwiseXor => 20,
+        BinaryOperator::BitwiseOr => 15,
     }
 }
 

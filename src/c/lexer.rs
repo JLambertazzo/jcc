@@ -74,7 +74,7 @@ fn classify_token(token_content: &str) -> Token {
             "!" => Some(Token::ExclamationPoint),
             "=" => Some(Token::EqualSign),
             "--" => {
-                panic!("Unsupported operator --")
+                panic!("-- should be one of the known lexical token types")
             }
             "&&" => Some(Token::DoubleAmpersand),
             "||" => Some(Token::DoublePipe),

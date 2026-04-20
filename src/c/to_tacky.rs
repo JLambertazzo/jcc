@@ -5,6 +5,7 @@ fn translate_unary_operator(op: c::ast::UnaryOperator) -> tacky::ast::UnaryOpera
     match op {
         c::ast::UnaryOperator::Negation => tacky::ast::UnaryOperator::Negate,
         c::ast::UnaryOperator::Complement => tacky::ast::UnaryOperator::Complement,
+        c::ast::UnaryOperator::Not => tacky::ast::UnaryOperator::Not,
     }
 }
 
@@ -20,6 +21,14 @@ fn translate_binary_operator(op: c::ast::BinaryOperator) -> tacky::ast::BinaryOp
         c::ast::BinaryOperator::BitwiseAnd => tacky::ast::BinaryOperator::BitwiseAnd,
         c::ast::BinaryOperator::BitwiseXor => tacky::ast::BinaryOperator::BitwiseXor,
         c::ast::BinaryOperator::BitwiseOr => tacky::ast::BinaryOperator::BitwiseOr,
+        c::ast::BinaryOperator::LogicalAnd => tacky::ast::BinaryOperator::LogicalAnd,
+        c::ast::BinaryOperator::LogicalOr => tacky::ast::BinaryOperator::LogicalOr,
+        c::ast::BinaryOperator::Equal => tacky::ast::BinaryOperator::Equal,
+        c::ast::BinaryOperator::NotEqual => tacky::ast::BinaryOperator::NotEqual,
+        c::ast::BinaryOperator::LessThan => tacky::ast::BinaryOperator::LessThan,
+        c::ast::BinaryOperator::LessThanOrEqual => tacky::ast::BinaryOperator::LessThanEqual,
+        c::ast::BinaryOperator::GreaterThan => tacky::ast::BinaryOperator::GreaterThan,
+        c::ast::BinaryOperator::GreaterThanOrEqual => tacky::ast::BinaryOperator::GreaterThanEqual,
     }
 }
 
@@ -39,6 +48,14 @@ fn name_binary_result(
         tacky::ast::BinaryOperator::BitwiseAnd => "BitAnd",
         tacky::ast::BinaryOperator::BitwiseOr => "BitOr",
         tacky::ast::BinaryOperator::BitwiseXor => "BitXor",
+        tacky::ast::BinaryOperator::LogicalAnd => "LogiAnd",
+        tacky::ast::BinaryOperator::LogicalOr => "LogiOr",
+        tacky::ast::BinaryOperator::Equal => "Equality",
+        tacky::ast::BinaryOperator::NotEqual => "NonEquality",
+        tacky::ast::BinaryOperator::LessThan => "LessThan",
+        tacky::ast::BinaryOperator::LessThanEqual => "LessThanEqual",
+        tacky::ast::BinaryOperator::GreaterThan => "GreaterThan",
+        tacky::ast::BinaryOperator::GreaterThanEqual => "GreaterThanEqual",
     };
     let v1_name = match v1 {
         tacky::ast::Value::Variable(name, _i) => name.to_string(),

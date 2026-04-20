@@ -5,6 +5,10 @@ fn translate_unary_op(op: tacky::UnaryOperator) -> asm::UnaryOperator {
     match op {
         tacky::UnaryOperator::Complement => asm::UnaryOperator::Not,
         tacky::UnaryOperator::Negate => asm::UnaryOperator::Neg,
+        _ => panic!(
+            "Operator {:?} does not have a corresponding unary operator in asm",
+            op
+        ),
     }
 }
 

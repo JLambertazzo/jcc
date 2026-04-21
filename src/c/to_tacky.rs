@@ -48,8 +48,8 @@ fn name_binary_result(
         tacky::ast::BinaryOperator::BitwiseAnd => "BitAnd",
         tacky::ast::BinaryOperator::BitwiseOr => "BitOr",
         tacky::ast::BinaryOperator::BitwiseXor => "BitXor",
-        tacky::ast::BinaryOperator::LogicalAnd => "LogiAnd",
-        tacky::ast::BinaryOperator::LogicalOr => "LogiOr",
+        tacky::ast::BinaryOperator::LogicalAnd => "LogicalAnd",
+        tacky::ast::BinaryOperator::LogicalOr => "LogicalOr",
         tacky::ast::BinaryOperator::Equal => "Equality",
         tacky::ast::BinaryOperator::NotEqual => "NonEquality",
         tacky::ast::BinaryOperator::LessThan => "LessThan",
@@ -66,6 +66,108 @@ fn name_binary_result(
         tacky::ast::Value::Constant(i) => i.to_string(),
     };
     format!("{result_type}Of{v1_name}And{v2_name}")
+}
+
+fn label_binary_step(
+    op: &tacky::ast::BinaryOperator,
+    v1: &tacky::ast::Value,
+    v2: &tacky::ast::Value,
+    step_name: &str,
+) -> String {
+    format!("{}_{}", name_binary_result(op, v1, v2), step_name)
+}
+
+fn generate_binop_instructions(
+    tacky_op: tacky::ast::BinaryOperator,
+    inner1: Vec<tacky::ast::Instruction>,
+    inner1_dst: tacky::ast::Value,
+    inner2: Vec<tacky::ast::Instruction>,
+    inner2_dst: tacky::ast::Value,
+    dst: tacky::ast::Value,
+) -> Vec<tacky::ast::Instruction> {
+    match tacky_op {
+        tacky::ast::BinaryOperator::LogicalAnd => [
+            inner1,
+            vec![tacky::ast::Instruction::JumpIfZero(
+                inner1_dst.clone(),
+                label_binary_step(&tacky_op, &inner1_dst, &inner2_dst, "FALSE"),
+            )],
+            inner2,
+            vec![
+                tacky::ast::Instruction::JumpIfZero(
+                    inner2_dst.clone(),
+                    label_binary_step(&tacky_op, &inner1_dst, &inner2_dst, "FALSE"),
+                ),
+                tacky::ast::Instruction::Copy(tacky::ast::Value::Constant(1), dst.clone()),
+                tacky::ast::Instruction::Jump(label_binary_step(
+                    &tacky_op,
+                    &inner1_dst,
+                    &inner2_dst,
+                    "END",
+                )),
+                tacky::ast::Instruction::Label(label_binary_step(
+                    &tacky_op,
+                    &inner1_dst,
+                    &inner2_dst,
+                    "FALSE",
+                )),
+                tacky::ast::Instruction::Copy(tacky::ast::Value::Constant(0), dst),
+                tacky::ast::Instruction::Label(label_binary_step(
+                    &tacky_op,
+                    &inner1_dst,
+                    &inner2_dst,
+                    "END",
+                )),
+            ],
+        ]
+        .concat(),
+        tacky::ast::BinaryOperator::LogicalOr => [
+            inner1,
+            vec![tacky::ast::Instruction::JumpIfNotZero(
+                inner1_dst.clone(),
+                label_binary_step(&tacky_op, &inner1_dst, &inner2_dst, "TRUE"),
+            )],
+            inner2,
+            vec![
+                tacky::ast::Instruction::JumpIfNotZero(
+                    inner2_dst.clone(),
+                    label_binary_step(&tacky_op, &inner1_dst, &inner2_dst, "TRUE"),
+                ),
+                tacky::ast::Instruction::Copy(tacky::ast::Value::Constant(0), dst.clone()),
+                tacky::ast::Instruction::Jump(label_binary_step(
+                    &tacky_op,
+                    &inner1_dst,
+                    &inner2_dst,
+                    "END",
+                )),
+                tacky::ast::Instruction::Label(label_binary_step(
+                    &tacky_op,
+                    &inner1_dst,
+                    &inner2_dst,
+                    "TRUE",
+                )),
+                tacky::ast::Instruction::Copy(tacky::ast::Value::Constant(1), dst),
+                tacky::ast::Instruction::Label(label_binary_step(
+                    &tacky_op,
+                    &inner1_dst,
+                    &inner2_dst,
+                    "END",
+                )),
+            ],
+        ]
+        .concat(),
+        _ => [
+            inner1,
+            inner2,
+            vec![tacky::ast::Instruction::Binary(
+                tacky_op,
+                inner1_dst,
+                inner2_dst,
+                dst.clone(),
+            )],
+        ]
+        .concat(),
+    }
 }
 
 fn translate_expression(
@@ -98,17 +200,14 @@ fn translate_expression(
                 name_binary_result(&tacky_op, &inner_value_v1, &inner_value_v2),
                 0,
             );
-            let instructions = [
+            let instructions = generate_binop_instructions(
+                tacky_op,
                 inner_instructions_v1,
+                inner_value_v1,
                 inner_instructions_v2,
-                vec![tacky::ast::Instruction::Binary(
-                    tacky_op,
-                    inner_value_v1,
-                    inner_value_v2,
-                    dst.clone(),
-                )],
-            ]
-            .concat();
+                inner_value_v2,
+                dst.clone(),
+            );
             (instructions, dst)
         }
     }

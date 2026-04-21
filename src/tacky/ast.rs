@@ -44,6 +44,11 @@ pub enum Instruction {
     Return(Value),
     Unary(UnaryOperator, Value, Value),
     Binary(BinaryOperator, Value, Value, Value),
+    Copy(Value, Value),
+    Jump(String),
+    JumpIfZero(Value, String),
+    JumpIfNotZero(Value, String),
+    Label(String),
 }
 
 #[derive(PartialEq, Debug)]

@@ -14,6 +14,8 @@ struct Cli {
     #[arg(short, long)]
     parse: bool,
     #[arg(short, long)]
+    tacky: bool,
+    #[arg(short, long)]
     codegen: bool,
     filepath: String,
 }
@@ -28,6 +30,9 @@ fn main() {
         process::exit(0);
     }
     let tacky_program = c::to_tacky::translate_program(c_program);
+    if cli.tacky {
+        process::exit(0);
+    }
     let asm_output = asm::tacky_program_to_asm_code(tacky_program);
     if cli.codegen {
         process::exit(0);

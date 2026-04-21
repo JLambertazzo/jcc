@@ -8,7 +8,7 @@ OUTPUT_ASSEMBLY=0
 # Pass stage flag to compiler
 COMPILER_STEP_FLAG=""
 
-if ! vars=$(getopt -o Sh -l "lex,parse,codegen,help" -- "$@"); then
+if ! vars=$(getopt -o Sh -l "lex,parse,tacky,codegen,help" -- "$@"); then
   exit 1
 fi
 for var in $vars
@@ -31,6 +31,10 @@ do
       ;;
     "--parse")
       COMPILER_STEP_FLAG="--parse"
+      shift
+      ;;
+    "--tacky")
+      COMPILER_STEP_FLAG="--tacky"
       shift
       ;;
     "--codegen")

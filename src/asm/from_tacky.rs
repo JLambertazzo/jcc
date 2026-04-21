@@ -90,6 +90,7 @@ fn translate_instruction(instruction: tacky::Instruction) -> Vec<asm::Instructio
                 ]
             }
         },
+        _ => todo!(),
     }
 }
 

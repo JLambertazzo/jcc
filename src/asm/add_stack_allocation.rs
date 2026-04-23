@@ -18,6 +18,13 @@ fn get_instruction_max_stack_offset(instruction: &asm::Instruction) -> i32 {
             max(operand_stack_offset(src), operand_stack_offset(dst))
         }
         asm::Instruction::Idiv(denominator) => operand_stack_offset(denominator),
+        asm::Instruction::Cmp(op1, op2) => {
+            max(operand_stack_offset(op1), operand_stack_offset(op2))
+        }
+        asm::Instruction::SetCC(_, op) => operand_stack_offset(op),
+        asm::Instruction::Label(_) => -1,
+        asm::Instruction::Jmp(_) => -1,
+        asm::Instruction::JmpCC(_, _) => -1,
         asm::Instruction::AllocateStack(_) => -1,
         asm::Instruction::Ret => -1,
         asm::Instruction::Cdq => -1,

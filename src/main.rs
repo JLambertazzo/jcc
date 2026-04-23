@@ -33,10 +33,11 @@ fn main() {
     if cli.tacky {
         process::exit(0);
     }
-    let asm_output = asm::tacky_program_to_asm_code(tacky_program);
+    let asm_program = asm::tacky_program_to_asm_code(tacky_program);
     if cli.codegen {
         process::exit(0);
     }
+    let asm_output = asm::to_code::asm_program_to_string(asm_program);
     let output_path = Regex::new(r"\.i$")
         .unwrap()
         .replace(input_path, ".s")

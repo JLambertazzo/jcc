@@ -87,6 +87,26 @@ fn use_scratch_register_for_mul(
     result_instructions
 }
 
+fn use_scratch_register_for_cmp(op1: asm::Operand, op2: asm::Operand) -> Vec<asm::Instruction> {
+    let mut result_instructions: Vec<asm::Instruction> = vec![];
+
+    // cmp can't use memory addresses for both operands
+    if let asm::Operand::Stack(_) = op1 && let asm::Operand::Stack(_) = op2 {
+        result_instructions.push(asm::Instruction::Mov(op1, asm::Operand::Register(asm::Register::R10)));
+        result_instructions.push(asm::Instruction::Cmp(asm::Operand::Register(asm::Register::R10), op2));
+        return result_instructions;
+    }
+
+    // cmp can't have constant in op2
+    if let asm::Operand::Immediate(_) = op2 {
+        result_instructions.push(asm::Instruction::Mov(op2, asm::Operand::Register(asm::Register::R11)));
+        result_instructions.push(asm::Instruction::Cmp(op1, asm::Operand::Register(asm::Register::R11)));
+        return result_instructions;
+    }
+
+    vec![asm::Instruction::Cmp(op1, op2)]
+}
+
 pub fn use_scratch_registers(
     instructions: &Vec<asm::Instruction>,
 ) -> Vec<asm::Instruction> {
@@ -113,6 +133,9 @@ pub fn use_scratch_registers(
                     }
                 }
             },
+            asm::Instruction::Cmp(op1, op2) => {
+                result_instructions.extend(use_scratch_register_for_cmp(op1, op2))
+            }
             _ => result_instructions.push(instruction),
         }
     }

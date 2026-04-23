@@ -25,8 +25,6 @@ pub fn replace_pseudoregisters_in_instructions(
 
     for instruction in instructions.clone() {
         let instruction_without_pseudo = match instruction {
-            asm::Instruction::Ret => instruction.clone(),
-            asm::Instruction::AllocateStack(_) => instruction.clone(),
             asm::Instruction::Mov(src, dst) => {
                 asm::Instruction::Mov(replace_pseudoregister(src), replace_pseudoregister(dst))
             }
@@ -42,6 +40,13 @@ pub fn replace_pseudoregisters_in_instructions(
                 asm::Instruction::Idiv(replace_pseudoregister(denominator))
             }
             asm::Instruction::Cdq => asm::Instruction::Cdq,
+            asm::Instruction::Cmp(op1, op2) => {
+                asm::Instruction::Cmp(replace_pseudoregister(op1), replace_pseudoregister(op2))
+            }
+            asm::Instruction::SetCC(cond_code, op) => {
+                asm::Instruction::SetCC(cond_code, replace_pseudoregister(op))
+            }
+            _ => instruction.clone(),
         };
         instructions_without_pseudo.push(instruction_without_pseudo);
     }

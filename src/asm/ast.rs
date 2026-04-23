@@ -8,6 +8,16 @@ pub enum Register {
     CX,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum CondCode {
+    E,
+    NE,
+    G,
+    GE,
+    L,
+    LE,
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum UnaryOperator {
     Neg,
@@ -43,6 +53,11 @@ pub enum Instruction {
     Idiv(Operand),
     Cdq,
     Ret,
+    Label(String),
+    Jmp(String),
+    Cmp(Operand, Operand),
+    JmpCC(CondCode, String),
+    SetCC(CondCode, Operand),
 }
 
 #[derive(PartialEq, Debug)]

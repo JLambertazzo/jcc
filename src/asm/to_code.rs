@@ -73,6 +73,7 @@ fn instruction_to_string(instruction: Instruction) -> String {
         Instruction::Idiv(denominator) => {
             format!("{INDENT}idivl {}\n", operand_to_string(denominator))
         }
+        _ => todo!(),
     }
 }
 

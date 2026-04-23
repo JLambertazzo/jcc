@@ -43,7 +43,10 @@ mod tests {
             ".section .note.GNU-stack,\"\",@progbits",
         ]
         .join("\n");
-        assert_eq!(tacky_program_to_asm_code(tacky_program), asm + "\n");
+        assert_eq!(
+            to_code::asm_program_to_string(tacky_program_to_asm_code(tacky_program)),
+            asm + "\n"
+        );
     }
 
     #[test]
@@ -91,6 +94,9 @@ mod tests {
             ".section .note.GNU-stack,\"\",@progbits",
         ]
         .join("\n");
-        assert_eq!(tacky_program_to_asm_code(tacky_program), asm + "\n");
+        assert_eq!(
+            to_code::asm_program_to_string(tacky_program_to_asm_code(tacky_program)),
+            asm + "\n"
+        );
     }
 }

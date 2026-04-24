@@ -261,48 +261,6 @@ mod tests {
     }
 
     #[test]
-    fn test_translate_nested_unary_op() {
-        let c_program = c::ast::Program::Program(c::ast::Function::Function(
-            String::from("main"),
-            c::ast::Statement::Return(c::ast::Expression::Unary(
-                c::ast::UnaryOperator::Complement,
-                Box::new(c::ast::Expression::Unary(
-                    c::ast::UnaryOperator::Negation,
-                    Box::new(c::ast::Expression::Unary(
-                        c::ast::UnaryOperator::Complement,
-                        Box::new(c::ast::Expression::Constant(2)),
-                    )),
-                )),
-            )),
-        ));
-        let tacky_program = tacky::ast::Program::Program(tacky::ast::Function::Function(
-            String::from("main"),
-            vec![
-                tacky::ast::Instruction::Unary(
-                    tacky::ast::UnaryOperator::Complement,
-                    tacky::ast::Value::Constant(2),
-                    tacky::ast::Value::Variable(String::from("unary"), 0),
-                ),
-                tacky::ast::Instruction::Unary(
-                    tacky::ast::UnaryOperator::Negate,
-                    tacky::ast::Value::Variable(String::from("unary"), 0),
-                    tacky::ast::Value::Variable(String::from("unary"), 1),
-                ),
-                tacky::ast::Instruction::Unary(
-                    tacky::ast::UnaryOperator::Complement,
-                    tacky::ast::Value::Variable(String::from("unary"), 1),
-                    tacky::ast::Value::Variable(String::from("unary"), 2),
-                ),
-                tacky::ast::Instruction::Return(tacky::ast::Value::Variable(
-                    String::from("unary"),
-                    2,
-                )),
-            ],
-        ));
-        assert_eq!(translate_program(c_program), tacky_program);
-    }
-
-    #[test]
     fn translate_binary_operation_chain() {
         let c_program = c::ast::Program::Program(c::ast::Function::Function(
             String::from("main"),

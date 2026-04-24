@@ -7,10 +7,8 @@ Implementation of the C compiler outlined in [Writing a C Compiler](https://nost
 ## Usage
 
 ```bash
-./jcc [-S][-h | --help][--lex | --parser | --codegen] path/to/code.c
+./jcc [-S][-h | --help][--lex | --parser | --tacky | --codegen] path/to/code.c
 ```
-
-`--lex`, `--parser`, and `--codegen` are not yet implemented. Still need to be forwarded to rust core logic.
 
 ## Project Structure
 

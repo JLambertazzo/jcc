@@ -178,8 +178,8 @@ fn translate_expression(
         c::ast::Expression::Unary(op, inner_expr) => {
             let (mut inner_instructions, inner_value) = translate_expression(*inner_expr);
             let variable = match inner_value {
-                tacky::ast::Value::Constant(_val) => {
-                    tacky::ast::Value::Variable(String::from("unary"), 0)
+                tacky::ast::Value::Constant(val) => {
+                    tacky::ast::Value::Variable(format!("unary{:?}", op), val)
                 }
                 tacky::ast::Value::Variable(ref name, i) => {
                     tacky::ast::Value::Variable(name.clone(), i + 1)

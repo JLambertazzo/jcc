@@ -4,15 +4,29 @@ const INDENT: &str = "  ";
 
 // Currently only using bottom 32 bits of AX, R10 registers. Will need to
 // accomodate a requested size later on
-fn get_register_name(register: Register) -> String {
-    match register {
-        Register::AX => String::from("%eax"),
-        Register::DX => String::from("%edx"),
-        Register::R10 => String::from("%r10d"),
-        Register::R11 => String::from("%r11d"),
-        Register::CX => String::from("%ecx"),
-        Register::CL => String::from("%cl"),
+fn get_register_name(register: Register, bytes: i32) -> String {
+    if bytes == 4 {
+        return match register {
+            Register::AX => String::from("%eax"),
+            Register::DX => String::from("%edx"),
+            Register::R10 => String::from("%r10d"),
+            Register::R11 => String::from("%r11d"),
+            Register::CX => String::from("%ecx"),
+            Register::CL => String::from("%cl"),
+        };
     }
+
+    if bytes == 1 {
+        return match register {
+            Register::AX => String::from("%al"),
+            Register::DX => String::from("%dl"),
+            Register::R10 => String::from("%r10b"),
+            Register::R11 => String::from("%r11b"),
+            _ => panic!("Register {:?} can't be written in 1-byte variant", register),
+        };
+    }
+
+    panic!("Unable to write register operating on {:?} bytes", bytes)
 }
 
 fn unary_op_to_string(operator: UnaryOperator) -> String {
@@ -35,10 +49,21 @@ fn binary_op_to_string(operator: BinaryOperator) -> String {
     }
 }
 
-fn operand_to_string(operand: Operand) -> String {
+fn cond_code_to_string(cond_code: CondCode) -> String {
+    match cond_code {
+        CondCode::E => String::from("e"),
+        CondCode::NE => String::from("ne"),
+        CondCode::L => String::from("l"),
+        CondCode::LE => String::from("le"),
+        CondCode::G => String::from("g"),
+        CondCode::GE => String::from("ge"),
+    }
+}
+
+fn operand_to_string(operand: Operand, bytes: i32) -> String {
     match operand {
         Operand::Immediate(i) => format!("${}", i),
-        Operand::Register(register) => get_register_name(register),
+        Operand::Register(register) => get_register_name(register, bytes),
         Operand::Pseudo(_name) => panic!("Pseudoregisters cannot be emitted to code"),
         Operand::Stack(offset) => format!("-{}(%rbp)", offset),
     }
@@ -49,19 +74,19 @@ fn instruction_to_string(instruction: Instruction) -> String {
         Instruction::UnaryOp(op, operand) => format!(
             "{INDENT}{} {}\n",
             unary_op_to_string(op),
-            operand_to_string(operand)
+            operand_to_string(operand, 4)
         ),
         Instruction::Binary(op, src, dst) => format!(
             "{INDENT}{} {}, {}\n",
             binary_op_to_string(op),
-            operand_to_string(src),
-            operand_to_string(dst)
+            operand_to_string(src, 4),
+            operand_to_string(dst, 4)
         ),
         Instruction::AllocateStack(size) => format!("{INDENT}subq ${}, %rsp\n", size),
         Instruction::Mov(src, dest) => format!(
             "{INDENT}movl {}, {}\n",
-            operand_to_string(src),
-            operand_to_string(dest)
+            operand_to_string(src, 4),
+            operand_to_string(dest, 4)
         ),
         Instruction::Ret => [
             format!("{INDENT}movq %rbp, %rsp\n"),
@@ -71,9 +96,24 @@ fn instruction_to_string(instruction: Instruction) -> String {
         .join(""),
         Instruction::Cdq => format!("{INDENT}cdq\n"),
         Instruction::Idiv(denominator) => {
-            format!("{INDENT}idivl {}\n", operand_to_string(denominator))
+            format!("{INDENT}idivl {}\n", operand_to_string(denominator, 4))
         }
-        _ => todo!(),
+        Instruction::Label(ident) => format!(".L{ident}:\n"),
+        Instruction::Jmp(ident) => format!("{INDENT}jmp .L{ident}\n"),
+        Instruction::JmpCC(cond_code, ident) => {
+            let cc = cond_code_to_string(cond_code);
+            format!("{INDENT}j{cc} .L{ident}\n")
+        }
+        Instruction::SetCC(cond_code, op) => {
+            let cc = cond_code_to_string(cond_code);
+            let op_string = operand_to_string(op, 1);
+            format!("{INDENT}set{cc} {op_string}\n")
+        }
+        Instruction::Cmp(op1, op2) => {
+            let op1_string = operand_to_string(op1, 4);
+            let op2_string = operand_to_string(op2, 4);
+            format!("{INDENT}cmpl {op1_string}, {op2_string}\n")
+        }
     }
 }
 

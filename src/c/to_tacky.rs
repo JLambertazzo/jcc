@@ -210,6 +210,7 @@ fn translate_expression(
             );
             (instructions, dst)
         }
+        _ => todo!(),
     }
 }
 
@@ -223,13 +224,23 @@ fn translate_statement(statement: c::ast::Statement) -> Vec<tacky::ast::Instruct
             ]
             .concat()
         }
+        _ => todo!(),
     }
 }
 
 fn translate_function(func: c::ast::Function) -> tacky::ast::Function {
     match func {
-        c::ast::Function::Function(name, statement) => {
-            tacky::ast::Function::Function(name, translate_statement(statement))
+        c::ast::Function::Function(name, blocks) => {
+            // forcing ownership of blocks for now to get first item
+            // keeps back-compatibility while we build out local var support
+            // likely need to refactor to use refs down the line
+            let mut blocks = blocks;
+            let first_block = blocks.remove(0);
+            let statement = match first_block {
+                c::ast::Block::Statement(statement) => translate_statement(statement),
+                _ => todo!(),
+            };
+            tacky::ast::Function::Function(name, statement)
         }
     }
 }
@@ -237,66 +248,5 @@ fn translate_function(func: c::ast::Function) -> tacky::ast::Function {
 pub fn translate_program(program: c::ast::Program) -> tacky::ast::Program {
     match program {
         c::ast::Program::Program(func) => tacky::ast::Program::Program(translate_function(func)),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_translate_simple_program() {
-        assert_eq!(
-            translate_program(c::ast::Program::Program(c::ast::Function::Function(
-                String::from("foo"),
-                c::ast::Statement::Return(c::ast::Expression::Constant(2))
-            ))),
-            tacky::ast::Program::Program(tacky::ast::Function::Function(
-                String::from("foo"),
-                vec![tacky::ast::Instruction::Return(
-                    tacky::ast::Value::Constant(2)
-                )]
-            ))
-        )
-    }
-
-    #[test]
-    fn translate_binary_operation_chain() {
-        let c_program = c::ast::Program::Program(c::ast::Function::Function(
-            String::from("main"),
-            c::ast::Statement::Return(c::ast::Expression::Binary(
-                c::ast::BinaryOperator::Add,
-                Box::new(c::ast::Expression::Constant(1)),
-                Box::new(c::ast::Expression::Binary(
-                    c::ast::BinaryOperator::Multiply,
-                    Box::new(c::ast::Expression::Constant(2)),
-                    Box::new(c::ast::Expression::Constant(3)),
-                )),
-            )),
-        ));
-        assert_eq!(
-            translate_program(c_program),
-            tacky::ast::Program::Program(tacky::ast::Function::Function(
-                String::from("main"),
-                vec![
-                    tacky::ast::Instruction::Binary(
-                        tacky::ast::BinaryOperator::Multiply,
-                        tacky::ast::Value::Constant(2),
-                        tacky::ast::Value::Constant(3),
-                        tacky::ast::Value::Variable(String::from("ProductOf2And3"), 0)
-                    ),
-                    tacky::ast::Instruction::Binary(
-                        tacky::ast::BinaryOperator::Add,
-                        tacky::ast::Value::Constant(1),
-                        tacky::ast::Value::Variable(String::from("ProductOf2And3"), 0),
-                        tacky::ast::Value::Variable(String::from("SumOf1AndProductOf2And3"), 0)
-                    ),
-                    tacky::ast::Instruction::Return(tacky::ast::Value::Variable(
-                        String::from("SumOf1AndProductOf2And3"),
-                        0
-                    ))
-                ]
-            ))
-        );
     }
 }

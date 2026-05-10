@@ -53,18 +53,28 @@ pub fn binary_operator_precedence(operator: &BinaryOperator) -> i32 {
 #[derive(PartialEq, Debug)]
 pub enum Expression {
     Constant(i32),
+    Var(String),
     Unary(UnaryOperator, Box<Expression>),
     Binary(BinaryOperator, Box<Expression>, Box<Expression>),
+    Assignment(Box<Expression>, Box<Expression>),
 }
 
 #[derive(PartialEq, Debug)]
 pub enum Statement {
     Return(Expression),
+    Expression(Expression),
+    Null,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum Block {
+    Statement(Statement),
+    Declaration(String, Option<Expression>),
 }
 
 #[derive(PartialEq, Debug)]
 pub enum Function {
-    Function(String, Statement),
+    Function(String, Vec<Block>),
 }
 
 #[derive(PartialEq, Debug)]

@@ -19,12 +19,13 @@ pub enum BinaryOperator {
     BitwiseOr,
     LogicalAnd,
     LogicalOr,
-    Equal,
+    IsEqual,
     NotEqual,
     LessThan,
     LessThanOrEqual,
     GreaterThan,
     GreaterThanOrEqual,
+    Equal, // assignment. `=`
 }
 
 pub fn binary_operator_precedence(operator: &BinaryOperator) -> i32 {
@@ -40,13 +41,14 @@ pub fn binary_operator_precedence(operator: &BinaryOperator) -> i32 {
         BinaryOperator::LessThanOrEqual => 35,
         BinaryOperator::GreaterThan => 35,
         BinaryOperator::GreaterThanOrEqual => 35,
-        BinaryOperator::Equal => 30,
+        BinaryOperator::IsEqual => 30,
         BinaryOperator::NotEqual => 30,
         BinaryOperator::BitwiseAnd => 25,
         BinaryOperator::BitwiseXor => 20,
         BinaryOperator::BitwiseOr => 15,
         BinaryOperator::LogicalAnd => 10,
         BinaryOperator::LogicalOr => 5,
+        BinaryOperator::Equal => 0,
     }
 }
 

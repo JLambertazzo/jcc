@@ -23,12 +23,13 @@ fn translate_binary_operator(op: c::ast::BinaryOperator) -> tacky::ast::BinaryOp
         c::ast::BinaryOperator::BitwiseOr => tacky::ast::BinaryOperator::BitwiseOr,
         c::ast::BinaryOperator::LogicalAnd => tacky::ast::BinaryOperator::LogicalAnd,
         c::ast::BinaryOperator::LogicalOr => tacky::ast::BinaryOperator::LogicalOr,
-        c::ast::BinaryOperator::Equal => tacky::ast::BinaryOperator::Equal,
+        c::ast::BinaryOperator::IsEqual => tacky::ast::BinaryOperator::Equal,
         c::ast::BinaryOperator::NotEqual => tacky::ast::BinaryOperator::NotEqual,
         c::ast::BinaryOperator::LessThan => tacky::ast::BinaryOperator::LessThan,
         c::ast::BinaryOperator::LessThanOrEqual => tacky::ast::BinaryOperator::LessThanEqual,
         c::ast::BinaryOperator::GreaterThan => tacky::ast::BinaryOperator::GreaterThan,
         c::ast::BinaryOperator::GreaterThanOrEqual => tacky::ast::BinaryOperator::GreaterThanEqual,
+        c::ast::BinaryOperator::Equal => todo!(),
     }
 }
 

@@ -4,12 +4,13 @@ use crate::core::parser::Parser;
 
 macro_rules! eat_token_of_kind {
     ($parser:expr, $expected:pat) => {{
-        let tok = $parser
-            .eat()
-            .expect(&format!("Expected {:?} but found None", stringify!($expected)));
+        let tok = $parser.eat().expect(&format!(
+            "Expected {:?} but found None",
+            stringify!($expected)
+        ));
         match &tok {
             $expected => tok,
-            _ => panic!("Expected {:?} but found {:?}", stringify!($expected), tok)
+            _ => panic!("Expected {:?} but found {:?}", stringify!($expected), tok),
         }
     }};
 }
@@ -48,12 +49,13 @@ fn translate_tok_to_binop(tok: &Token) -> Option<BinaryOperator> {
         Token::DoubleCloseAngleBracket => Some(BinaryOperator::RightShift),
         Token::DoubleAmpersand => Some(BinaryOperator::LogicalAnd),
         Token::DoublePipe => Some(BinaryOperator::LogicalOr),
-        Token::DoubleEqual => Some(BinaryOperator::Equal),
+        Token::DoubleEqual => Some(BinaryOperator::IsEqual),
         Token::NotEqual => Some(BinaryOperator::NotEqual),
         Token::OpenAngleBracket => Some(BinaryOperator::LessThan),
         Token::LessThanEqual => Some(BinaryOperator::LessThanOrEqual),
         Token::CloseAngleBracket => Some(BinaryOperator::GreaterThan),
         Token::GreaterThanEqual => Some(BinaryOperator::GreaterThanOrEqual),
+        Token::EqualSign => Some(BinaryOperator::Equal),
         _ => None,
     }
 }
@@ -88,13 +90,15 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
             let name = name.clone();
             eat_token_of_kind!(parser, Token::Identifier(_));
             Expression::Var(name)
-        },
+        }
         _ => {
-            let tok = parser.eat().expect("Expected start of expression but found None.");
+            let tok = parser
+                .eat()
+                .expect("Expected start of expression but found None.");
             let maybe_unop = translate_tok_to_unop(&tok);
             if let Some(unop) = maybe_unop {
                 let expr = parse_primary(parser);
-                return Expression::Unary(unop, Box::new(expr))
+                return Expression::Unary(unop, Box::new(expr));
             }
             panic!("Invalid expression. Cannot begin with {:?}", tok)
         }
@@ -116,18 +120,21 @@ fn is_next_token_binary_op_no_lower_precedence(
 fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: i32) -> Expression {
     let mut expr = parse_primary(parser);
     while is_next_token_binary_op_no_lower_precedence(parser, min_precedence) {
-        let tok = parser.eat().expect("Expected operator in expression but found None.");
+        let tok = parser
+            .eat()
+            .expect("Expected operator in expression but found None.");
         match tok {
             Token::EqualSign => {
-                eat_known_token!(parser, Token::EqualSign);
-                // TODO add = precedence to map
                 let rhs = parse_expression_with_precedence(parser, 1);
                 expr = Expression::Assignment(Box::new(expr), Box::new(rhs));
-            },
+            }
             _ => {
-                let operator = translate_tok_to_binop(&tok).expect(format!("Expected binary operator but found {:?}", tok).as_str());
-                let rhs =
-                    parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
+                let operator = translate_tok_to_binop(&tok)
+                    .expect(format!("Expected binary operator but found {:?}", tok).as_str());
+                let rhs = parse_expression_with_precedence(
+                    parser,
+                    binary_operator_precedence(&operator) + 1,
+                );
                 expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));
             }
         }
@@ -139,61 +146,72 @@ fn parse_expression(parser: &mut Parser<Token>) -> Expression {
     parse_expression_with_precedence(parser, 0)
 }
 
-// way too bulky - simplify!
-fn parse_block(parser: &mut Parser<Token>) -> Block {
-    let next_tok = parser.peek().expect("Expected block but found None");
-    if let Token::Keyword(kwd) = next_tok.clone() && kwd == String::from("int") {
-        eat_known_token!(parser, Token::Keyword(String::from("int")));
-        let var_name_tok = eat_token_of_kind!(parser, Token::Identifier(_));
-        // duplicate check, above macro should handle it. Why not??
-        let var_name = match var_name_tok {
-            Token::Identifier(name) => name,
-            _ => panic!("Failed to retrieve identifier name")
-        };
-        return match parser.peek().expect("Expected assignment or semicolon but found None") {
-            &Token::EqualSign => Block::Declaration(var_name, Some(parse_expression(parser))),
-            &Token::Semicolon => Block::Declaration(var_name, None),
-            _ => {
-                let tok = parser.eat().expect("Token disappeared between peek and eat?");
-                panic!("Expected = or ; but found {:?}", tok)
-            }
+// parse Block::Statement. We currently support 3 types of statements
+// 1. Null statements defined by a single semicolon
+// 2. Expressions defined as <expr>;
+// 3. Return statements defined as return <expr>;
+fn parse_statement(parser: &mut Parser<Token>) -> Block {
+    match parser.peek() {
+        Some(&Token::Semicolon) => {
+            eat_known_token!(parser, Token::Semicolon);
+            Block::Statement(Statement::Null)
         }
+        Some(Token::Keyword(key)) if key == "return" => {
+            eat_known_token!(parser, Token::Keyword(String::from("return")));
+            let expr = parse_expression(parser);
+            eat_known_token!(parser, Token::Semicolon);
+            Block::Statement(Statement::Return(expr))
+        }
+        Some(_) => {
+            let expr = parse_expression(parser);
+            eat_known_token!(parser, Token::Semicolon);
+            Block::Statement(Statement::Expression(expr))
+        }
+        None => panic!("Expected statement but no tokens found"),
     }
+}
 
-    if let Token::Keyword(kwd) = next_tok.clone() && kwd == String::from("return") {
-        eat_known_token!(parser, Token::Keyword(String::from("return")));
-        let expr = parse_expression(parser);
-        eat_token_of_kind!(parser, Token::Semicolon);
-        return Block::Statement(Statement::Return(expr));
+fn parse_declaration(parser: &mut Parser<Token>) -> Block {
+    // Parse a declaration. Declarations must start with the variable's type
+    // currently we only support declaring int variables
+    eat_known_token!(parser, Token::Keyword(String::from("int")));
+    let Some(Token::Identifier(var_name)) = parser.eat() else {
+        panic!("Expected variable name identifier")
+    };
+    let expr = match parser.peek() {
+        Some(&Token::EqualSign) => {
+            eat_known_token!(parser, Token::EqualSign);
+            let expr = parse_expression(parser);
+            eat_known_token!(parser, Token::Semicolon);
+            Some(expr)
+        }
+        Some(&Token::Semicolon) => None,
+        Some(tok) => panic!("Expected = or ; but found {:?}", tok),
+        None => panic!("Expected = or ; but found None"),
+    };
+    Block::Declaration(var_name, expr)
+}
+
+fn parse_block(parser: &mut Parser<Token>) -> Block {
+    match parser.peek() {
+        // currently only variables of type int can be declared
+        Some(Token::Keyword(key)) if key == "int" => parse_declaration(parser),
+        Some(_) => parse_statement(parser),
+        None => panic!("Expected a block but no tokens found"),
     }
-
-    if let Token::Semicolon = next_tok {
-        eat_known_token!(parser, Token::Semicolon);
-        return Block::Statement(Statement::Null);
-    }
-
-    let expr = parse_expression(parser);
-    return Block::Statement(Statement::Expression(expr));
 }
 
 fn parse_function(parser: &mut Parser<Token>) -> Function {
     eat_known_token!(parser, Token::Keyword(String::from("int")));
-    let name_tok = eat_token_of_kind!(parser, Token::Identifier(_));
-    let name = match name_tok {
-        Token::Identifier(name) => Ok(name),
-        _ => Err(format!("{:?} should be an identifier", name_tok)),
-    }
-    .unwrap();
+    let Some(Token::Identifier(name)) = parser.eat() else {
+        panic!("Expected function name identifier")
+    };
     eat_token_of_kind!(parser, Token::OpenParenthesis);
-    let next = parser.peek();
-    if let Some(tok) = next && let Token::Keyword(kwd) = tok && kwd.clone() == String::from("void") {
-        eat_known_token!(parser, Token::Keyword(String::from("void")));
-        eat_token_of_kind!(parser, Token::CloseParenthesis);
-    } else if let Some(tok) = next && let Token::CloseParenthesis = tok {
-        eat_token_of_kind!(parser, Token::CloseParenthesis);
-    } else {
-        panic!("Unexpected token in function args")
+    // parse args.. currently only (void) is supported
+    if parser.peek() == Some(&Token::Keyword(String::from("void"))) {
+        parser.eat();
     }
+    eat_known_token!(parser, Token::CloseParenthesis);
     eat_token_of_kind!(parser, Token::OpenBrace);
     let mut blocks: Vec<Block> = vec![];
     while parser.peek() != Some(&Token::CloseBrace) {
@@ -207,7 +225,10 @@ fn parse_function(parser: &mut Parser<Token>) -> Function {
 pub fn parse_program(parser: &mut Parser<Token>) -> Program {
     let program = Program::Program(parse_function(parser));
     if let Some(tok) = parser.peek() {
-        panic!("Parsed entire program but found extra content starting with token {:?}", tok)
+        panic!(
+            "Parsed entire program but found extra content starting with token {:?}",
+            tok
+        )
     };
     program
 }

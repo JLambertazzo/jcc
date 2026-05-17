@@ -59,8 +59,6 @@ fi
 INPUT_FILE=$1
 BASE_PATH=$(echo $INPUT_FILE | sed -E 's/\.\w*$//')
 
-echo "PROCESSING $INPUT_FILE" >>processing
-
 # Preprocess input file
 PREPROC_PATH="${BASE_PATH}.i"
 gcc -E -P $INPUT_FILE -o $PREPROC_PATH

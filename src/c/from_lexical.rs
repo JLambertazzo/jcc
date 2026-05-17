@@ -96,11 +96,11 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
                 .eat()
                 .expect("Expected start of expression but found None.");
             let maybe_unop = translate_tok_to_unop(&tok);
-            if let Some(unop) = maybe_unop {
-                let expr = parse_primary(parser);
-                return Expression::Unary(unop, Box::new(expr));
-            }
-            panic!("Invalid expression. Cannot begin with {:?}", tok)
+            let Some(unop) = maybe_unop else {
+                panic!("Invalid expression. Cannot begin with {:?}", tok);
+            };
+            let expr = parse_primary(parser);
+            return Expression::Unary(unop, Box::new(expr));
         }
     }
 }
@@ -123,21 +123,14 @@ fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: 
         let tok = parser
             .eat()
             .expect("Expected operator in expression but found None.");
-        match tok {
-            Token::EqualSign => {
-                let rhs = parse_expression_with_precedence(parser, 1);
-                expr = Expression::Assignment(Box::new(expr), Box::new(rhs));
-            }
-            _ => {
-                let operator = translate_tok_to_binop(&tok)
-                    .expect(format!("Expected binary operator but found {:?}", tok).as_str());
-                let rhs = parse_expression_with_precedence(
-                    parser,
-                    binary_operator_precedence(&operator) + 1,
-                );
-                expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));
-            }
-        }
+        let operator = translate_tok_to_binop(&tok)
+            .expect(format!("Expected binary operator but found {:?}", tok).as_str());
+        let rhs =
+            parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
+        expr = match operator {
+            BinaryOperator::Equal => Expression::Assignment(Box::new(expr), Box::new(rhs)),
+            _ => Expression::Binary(operator, Box::new(expr), Box::new(rhs)),
+        };
     }
     expr
 }

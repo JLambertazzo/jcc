@@ -255,23 +255,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "Expected \"Token::Semicolon\" but found Identifier(\"variable_name\")"]
-    fn panic_on_unexpected_token_kind() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier(String::from("function_name")),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::Constant(String::from("2")),
-            Token::Identifier(String::from("variable_name")),
-            Token::CloseBrace,
-        ];
-        parse_program(&mut Parser::new(program_token_vector));
-    }
-
-    #[test]
     #[should_panic = "Invalid expression. Cannot begin with OpenBrace"]
     fn panic_on_malformed_expression() {
         let program_token_vector = vec![

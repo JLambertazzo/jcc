@@ -66,7 +66,7 @@ fn ch1_bad_input_invalid_token() {
 }
 
 #[test]
-#[should_panic = "Expected \\\"Token::Semicolon\\\" but found OpenBrace"]
+#[should_panic = "Expected Semicolon but found OpenBrace"]
 fn ch1_bad_input_unexpected_token_kind() {
     let mut cmd = cargo_bin_cmd!("compiler");
     cmd.arg("tests/fixtures/input/ch1_bad_input_unexpected_token_kind.i");

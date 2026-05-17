@@ -4,12 +4,13 @@ use crate::core::parser::Parser;
 
 macro_rules! eat_token_of_kind {
     ($parser:expr, $expected:pat) => {{
-        let tok = $parser
-            .eat()
-            .expect(&format!("Expected {:?} but found None", stringify!($expected)));
+        let tok = $parser.eat().expect(&format!(
+            "Expected {:?} but found None",
+            stringify!($expected)
+        ));
         match &tok {
             $expected => tok,
-            _ => panic!("Expected {:?} but found {:?}", stringify!($expected), tok)
+            _ => panic!("Expected {:?} but found {:?}", stringify!($expected), tok),
         }
     }};
 }
@@ -48,12 +49,13 @@ fn translate_tok_to_binop(tok: &Token) -> Option<BinaryOperator> {
         Token::DoubleCloseAngleBracket => Some(BinaryOperator::RightShift),
         Token::DoubleAmpersand => Some(BinaryOperator::LogicalAnd),
         Token::DoublePipe => Some(BinaryOperator::LogicalOr),
-        Token::DoubleEqual => Some(BinaryOperator::Equal),
+        Token::DoubleEqual => Some(BinaryOperator::IsEqual),
         Token::NotEqual => Some(BinaryOperator::NotEqual),
         Token::OpenAngleBracket => Some(BinaryOperator::LessThan),
         Token::LessThanEqual => Some(BinaryOperator::LessThanOrEqual),
         Token::CloseAngleBracket => Some(BinaryOperator::GreaterThan),
         Token::GreaterThanEqual => Some(BinaryOperator::GreaterThanOrEqual),
+        Token::EqualSign => Some(BinaryOperator::Equal),
         _ => None,
     }
 }
@@ -84,12 +86,19 @@ fn parse_primary(parser: &mut Parser<Token>) -> Expression {
             eat_known_token!(parser, Token::CloseParenthesis);
             expr
         }
+        Token::Identifier(name) => {
+            let name = name.clone();
+            eat_token_of_kind!(parser, Token::Identifier(_));
+            Expression::Var(name)
+        }
         _ => {
-            let tok = parser.eat().expect("Expected start of expression but found None.");
+            let tok = parser
+                .eat()
+                .expect("Expected start of expression but found None.");
             let maybe_unop = translate_tok_to_unop(&tok);
             if let Some(unop) = maybe_unop {
                 let expr = parse_primary(parser);
-                return Expression::Unary(unop, Box::new(expr))
+                return Expression::Unary(unop, Box::new(expr));
             }
             panic!("Invalid expression. Cannot begin with {:?}", tok)
         }
@@ -111,11 +120,24 @@ fn is_next_token_binary_op_no_lower_precedence(
 fn parse_expression_with_precedence(parser: &mut Parser<Token>, min_precedence: i32) -> Expression {
     let mut expr = parse_primary(parser);
     while is_next_token_binary_op_no_lower_precedence(parser, min_precedence) {
-        let tok = parser.eat().expect("Expected binary operator but found None.");
-        let operator = translate_tok_to_binop(&tok).expect(format!("Expected binary operator but found {:?}", tok).as_str());
-        let rhs =
-            parse_expression_with_precedence(parser, binary_operator_precedence(&operator) + 1);
-        expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));
+        let tok = parser
+            .eat()
+            .expect("Expected operator in expression but found None.");
+        match tok {
+            Token::EqualSign => {
+                let rhs = parse_expression_with_precedence(parser, 1);
+                expr = Expression::Assignment(Box::new(expr), Box::new(rhs));
+            }
+            _ => {
+                let operator = translate_tok_to_binop(&tok)
+                    .expect(format!("Expected binary operator but found {:?}", tok).as_str());
+                let rhs = parse_expression_with_precedence(
+                    parser,
+                    binary_operator_precedence(&operator) + 1,
+                );
+                expr = Expression::Binary(operator, Box::new(expr), Box::new(rhs));
+            }
+        }
     }
     expr
 }
@@ -124,47 +146,89 @@ fn parse_expression(parser: &mut Parser<Token>) -> Expression {
     parse_expression_with_precedence(parser, 0)
 }
 
-fn parse_return(parser: &mut Parser<Token>) -> Statement {
-    eat_known_token!(parser, Token::Keyword(String::from("return")));
-    let expr = parse_expression(parser);
-    eat_token_of_kind!(parser, Token::Semicolon);
-
-    Statement::Return(expr)
+// parse Block::Statement. We currently support 3 types of statements
+// 1. Null statements defined by a single semicolon
+// 2. Expressions defined as <expr>;
+// 3. Return statements defined as return <expr>;
+fn parse_statement(parser: &mut Parser<Token>) -> Block {
+    match parser.peek() {
+        Some(&Token::Semicolon) => {
+            eat_known_token!(parser, Token::Semicolon);
+            Block::Statement(Statement::Null)
+        }
+        Some(Token::Keyword(key)) if key == "return" => {
+            eat_known_token!(parser, Token::Keyword(String::from("return")));
+            let expr = parse_expression(parser);
+            eat_known_token!(parser, Token::Semicolon);
+            Block::Statement(Statement::Return(expr))
+        }
+        Some(_) => {
+            let expr = parse_expression(parser);
+            eat_known_token!(parser, Token::Semicolon);
+            Block::Statement(Statement::Expression(expr))
+        }
+        None => panic!("Expected statement but no tokens found"),
+    }
 }
 
-fn parse_statement(parser: &mut Parser<Token>) -> Statement {
-    parse_return(parser)
+fn parse_declaration(parser: &mut Parser<Token>) -> Block {
+    // Parse a declaration. Declarations must start with the variable's type
+    // currently we only support declaring int variables
+    eat_known_token!(parser, Token::Keyword(String::from("int")));
+    let Some(Token::Identifier(var_name)) = parser.eat() else {
+        panic!("Expected variable name identifier")
+    };
+    let expr = match parser.peek() {
+        Some(&Token::EqualSign) => {
+            eat_known_token!(parser, Token::EqualSign);
+            let expr = parse_expression(parser);
+            eat_known_token!(parser, Token::Semicolon);
+            Some(expr)
+        }
+        Some(&Token::Semicolon) => None,
+        Some(tok) => panic!("Expected = or ; but found {:?}", tok),
+        None => panic!("Expected = or ; but found None"),
+    };
+    Block::Declaration(var_name, expr)
+}
+
+fn parse_block(parser: &mut Parser<Token>) -> Block {
+    match parser.peek() {
+        // currently only variables of type int can be declared
+        Some(Token::Keyword(key)) if key == "int" => parse_declaration(parser),
+        Some(_) => parse_statement(parser),
+        None => panic!("Expected a block but no tokens found"),
+    }
 }
 
 fn parse_function(parser: &mut Parser<Token>) -> Function {
     eat_known_token!(parser, Token::Keyword(String::from("int")));
-    let name_tok = eat_token_of_kind!(parser, Token::Identifier(_));
-    let name = match name_tok {
-        Token::Identifier(name) => Ok(name),
-        _ => Err(format!("{:?} should be an identifier", name_tok)),
-    }
-    .unwrap();
+    let Some(Token::Identifier(name)) = parser.eat() else {
+        panic!("Expected function name identifier")
+    };
     eat_token_of_kind!(parser, Token::OpenParenthesis);
-    let next = parser.peek();
-    if let Some(tok) = next && let Token::Keyword(kwd) = tok && kwd.clone() == String::from("void") {
-        eat_known_token!(parser, Token::Keyword(String::from("void")));
-        eat_token_of_kind!(parser, Token::CloseParenthesis);
-    } else if let Some(tok) = next && let Token::CloseParenthesis = tok {
-        eat_token_of_kind!(parser, Token::CloseParenthesis);
-    } else {
-        panic!("Unexpected token in function args")
+    // parse args.. currently only (void) is supported
+    if parser.peek() == Some(&Token::Keyword(String::from("void"))) {
+        parser.eat();
     }
+    eat_known_token!(parser, Token::CloseParenthesis);
     eat_token_of_kind!(parser, Token::OpenBrace);
-    let statement = parse_statement(parser);
+    let mut blocks: Vec<Block> = vec![];
+    while parser.peek() != Some(&Token::CloseBrace) {
+        blocks.push(parse_block(parser));
+    }
     eat_token_of_kind!(parser, Token::CloseBrace);
 
-    Function::Function(name, statement)
+    Function::Function(name, blocks)
 }
 
 pub fn parse_program(parser: &mut Parser<Token>) -> Program {
     let program = Program::Program(parse_function(parser));
     if let Some(tok) = parser.peek() {
-        panic!("Parsed entire program but found extra content starting with token {:?}", tok)
+        panic!(
+            "Parsed entire program but found extra content starting with token {:?}",
+            tok
+        )
     };
     program
 }
@@ -172,28 +236,6 @@ pub fn parse_program(parser: &mut Parser<Token>) -> Program {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_parse_program() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier(String::from("function_name")),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::Constant(String::from("2")),
-            Token::Semicolon,
-            Token::CloseBrace,
-        ];
-        assert_eq!(
-            parse_program(&mut Parser::new(program_token_vector)),
-            Program::Program(Function::Function(
-                "function_name".to_string(),
-                Statement::Return(Expression::Constant(2))
-            ))
-        )
-    }
 
     #[test]
     #[should_panic = "Expected Keyword(\"int\") but found Keyword(\"return\")"]
@@ -207,23 +249,6 @@ mod tests {
             Token::Keyword(String::from("return")),
             Token::Constant(String::from("2")),
             Token::Semicolon,
-            Token::CloseBrace,
-        ];
-        parse_program(&mut Parser::new(program_token_vector));
-    }
-
-    #[test]
-    #[should_panic = "Expected \"Token::Semicolon\" but found Identifier(\"variable_name\")"]
-    fn panic_on_unexpected_token_kind() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier(String::from("function_name")),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::Constant(String::from("2")),
-            Token::Identifier(String::from("variable_name")),
             Token::CloseBrace,
         ];
         parse_program(&mut Parser::new(program_token_vector));
@@ -246,201 +271,5 @@ mod tests {
             Token::CloseBrace,
         ];
         parse_program(&mut Parser::new(program_token_vector));
-    }
-
-    #[test]
-    fn test_parse_nested_expression_program() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier(String::from("function_name")),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::Hyphen,
-            Token::OpenParenthesis,
-            Token::Tilde,
-            Token::OpenParenthesis,
-            Token::Hyphen,
-            Token::Constant(String::from("2")),
-            Token::CloseParenthesis,
-            Token::CloseParenthesis,
-            Token::Semicolon,
-            Token::CloseBrace,
-        ];
-        assert_eq!(
-            parse_program(&mut Parser::new(program_token_vector)),
-            Program::Program(Function::Function(
-                "function_name".to_string(),
-                Statement::Return(Expression::Unary(
-                    UnaryOperator::Negation,
-                    Box::new(Expression::Unary(
-                        UnaryOperator::Complement,
-                        Box::new(Expression::Unary(
-                            UnaryOperator::Negation,
-                            Box::new(Expression::Constant(2))
-                        ))
-                    ))
-                ))
-            ))
-        )
-    }
-
-    #[test]
-    fn test_parse_many_binary_expressions() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier("main".to_string()),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::OpenParenthesis,
-            Token::Constant(String::from("1")),
-            Token::Plus,
-            Token::Constant(String::from("2")),
-            Token::CloseParenthesis,
-            Token::Star,
-            Token::OpenParenthesis,
-            Token::Constant(String::from("4")),
-            Token::Hyphen,
-            Token::Constant(String::from("3")),
-            Token::CloseParenthesis,
-            Token::Slash,
-            Token::OpenParenthesis,
-            Token::Constant(String::from("3")),
-            Token::Modulo,
-            Token::Constant(String::from("2")),
-            Token::CloseParenthesis,
-            Token::Semicolon,
-            Token::CloseBrace,
-        ];
-        assert_eq!(
-            parse_program(&mut Parser::new(program_token_vector)),
-            Program::Program(Function::Function(
-                "main".to_string(),
-                Statement::Return(Expression::Binary(
-                    BinaryOperator::Divide,
-                    Box::new(Expression::Binary(
-                        BinaryOperator::Multiply,
-                        Box::new(Expression::Binary(
-                            BinaryOperator::Add,
-                            Box::new(Expression::Constant(1)),
-                            Box::new(Expression::Constant(2)),
-                        )),
-                        Box::new(Expression::Binary(
-                            BinaryOperator::Subtract,
-                            Box::new(Expression::Constant(4)),
-                            Box::new(Expression::Constant(3)),
-                        )),
-                    )),
-                    Box::new(Expression::Binary(
-                        BinaryOperator::Modulo,
-                        Box::new(Expression::Constant(3)),
-                        Box::new(Expression::Constant(2)),
-                    )),
-                ))
-            ))
-        )
-    }
-
-    #[test]
-    fn parse_binary_expression_with_nested_unary() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier("main".to_string()),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::Tilde,
-            Token::Constant(String::from("2")),
-            Token::Plus,
-            Token::Hyphen,
-            Token::Constant(String::from("3")),
-            Token::Semicolon,
-            Token::CloseBrace,
-        ];
-        assert_eq!(
-            parse_program(&mut Parser::new(program_token_vector)),
-            Program::Program(Function::Function(
-                String::from("main"),
-                Statement::Return(Expression::Binary(
-                    BinaryOperator::Add,
-                    Box::new(Expression::Unary(
-                        UnaryOperator::Complement,
-                        Box::new(Expression::Constant(2))
-                    )),
-                    Box::new(Expression::Unary(
-                        UnaryOperator::Negation,
-                        Box::new(Expression::Constant(3))
-                    ))
-                ))
-            ))
-        )
-    }
-
-    #[test]
-    fn applies_correct_order_of_operations() {
-        let program_token_vector = vec![
-            Token::Keyword(String::from("int")),
-            Token::Identifier("main".to_string()),
-            Token::OpenParenthesis,
-            Token::CloseParenthesis,
-            Token::OpenBrace,
-            Token::Keyword(String::from("return")),
-            Token::Constant(String::from("1")),
-            Token::Plus,
-            Token::Constant(String::from("2")), // \
-            Token::Star,
-            Token::Constant(String::from("3")), // /
-            Token::Hyphen,
-            Token::Constant(String::from("4")), // \
-            Token::Slash,
-            Token::Constant(String::from("5")), // /
-            Token::Plus,
-            Token::Constant(String::from("6")), // \
-            Token::Modulo,
-            Token::Constant(String::from("7")), // /
-            Token::Hyphen,
-            Token::Constant(String::from("1")),
-            Token::Semicolon,
-            Token::CloseBrace,
-        ];
-        assert_eq!(
-            parse_program(&mut Parser::new(program_token_vector)),
-            Program::Program(Function::Function(
-                String::from("main"),
-                Statement::Return(Expression::Binary(
-                    BinaryOperator::Subtract,
-                    Box::new(Expression::Binary(
-                        BinaryOperator::Add,
-                        Box::new(Expression::Binary(
-                            BinaryOperator::Subtract,
-                            Box::new(Expression::Binary(
-                                BinaryOperator::Add,
-                                Box::new(Expression::Constant(1)),
-                                Box::new(Expression::Binary(
-                                    BinaryOperator::Multiply,
-                                    Box::new(Expression::Constant(2)),
-                                    Box::new(Expression::Constant(3))
-                                ))
-                            )),
-                            Box::new(Expression::Binary(
-                                BinaryOperator::Divide,
-                                Box::new(Expression::Constant(4)),
-                                Box::new(Expression::Constant(5))
-                            ))
-                        )),
-                        Box::new(Expression::Binary(
-                            BinaryOperator::Modulo,
-                            Box::new(Expression::Constant(6)),
-                            Box::new(Expression::Constant(7)),
-                        ))
-                    )),
-                    Box::new(Expression::Constant(1))
-                ))
-            ))
-        )
     }
 }

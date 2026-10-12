@@ -5,7 +5,13 @@ use std::fs;
 macro_rules! expect_match_fixture {
     ($output_file_name:literal) => {
         let expected_output_path = format!("tests/fixtures/input/{}", $output_file_name);
-        let output_fixture_path = format!("tests/fixtures/output/{}", $output_file_name);
+        // macOS has its own fixtures (underscore-prefixed symbols, no
+        // `.note.GNU-stack` section).
+        let output_fixture_path = if cfg!(target_os = "macos") {
+            format!("tests/fixtures/output/osx/{}", $output_file_name)
+        } else {
+            format!("tests/fixtures/output/{}", $output_file_name)
+        };
         assert!(fs::exists(expected_output_path.clone()).is_ok_and(|_| true));
 
         let expected_output = fs::read_to_string(expected_output_path.clone())?;

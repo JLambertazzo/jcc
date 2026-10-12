@@ -1,0 +1,6 @@
+#!/bin/bash
+# Force x86-64 output on Apple Silicon, where the system gcc targets arm64.
+# The book's test suite only targets x86-64; the result runs under Rosetta.
+#
+# Usage: PATH="$PWD/scripts/x86_64-gcc:$PATH" ./run-tests.sh
+exec /usr/bin/clang -arch x86_64 "$@"

@@ -25,3 +25,26 @@ jobs:
         run: |
           chmod +x ./run-tests.sh
           ./run-tests.sh
+
+  # Tests the macOS codegen. The runner is arm64 and the book's suite targets
+  # x86-64, so force x86-64 output; the results run under Rosetta.
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build
+        run: cargo build -r --verbose
+      - name: Cargo Tests
+        run: cargo test --verbose
+      - name: Ensure Rosetta 2 is available
+        run: |
+          if ! arch -x86_64 /usr/bin/true 2>/dev/null; then
+            sudo softwareupdate --install-rosetta --agree-to-license
+          fi
+      - name: Library Tests
+        run: |
+          chmod +x ./run-tests.sh
+          PATH="$PWD/scripts/x86_64-gcc:$PATH" ./run-tests.sh

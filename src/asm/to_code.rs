@@ -2,6 +2,18 @@ use super::ast::*;
 
 const INDENT: &str = "  ";
 
+// macOS symbols are underscore-prefixed and need no `.note.GNU-stack` section;
+// Linux is the opposite.
+#[cfg(target_os = "macos")]
+pub const SYMBOL_PREFIX: &str = "_";
+#[cfg(not(target_os = "macos"))]
+pub const SYMBOL_PREFIX: &str = "";
+
+#[cfg(target_os = "macos")]
+const GNU_STACK_NOTE: &str = "";
+#[cfg(not(target_os = "macos"))]
+const GNU_STACK_NOTE: &str = "\n.section .note.GNU-stack,\"\",@progbits\n";
+
 // Currently only using bottom 32 bits of AX, R10 registers. Will need to
 // accomodate a requested size later on
 fn get_register_name(register: Register, bytes: i32) -> String {
@@ -126,9 +138,10 @@ fn function_to_string(func: Function) -> String {
             }
 
             let function_header = format!("{INDENT}pushq %rbp\n{INDENT}movq %rsp, %rbp\n");
+            let symbol = format!("{SYMBOL_PREFIX}{name}");
 
             format!(
-                "{INDENT}.globl {name}\n{name}:\n{function_header}{}",
+                "{INDENT}.globl {symbol}\n{symbol}:\n{function_header}{}",
                 instruction_strings.join("")
             )
         }
@@ -137,9 +150,6 @@ fn function_to_string(func: Function) -> String {
 
 pub fn asm_program_to_string(program: Program) -> String {
     match program {
-        Program::Program(func) => format!(
-            "{}\n.section .note.GNU-stack,\"\",@progbits\n",
-            function_to_string(func)
-        ),
+        Program::Program(func) => format!("{}{GNU_STACK_NOTE}", function_to_string(func)),
     }
 }

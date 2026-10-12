@@ -23,26 +23,43 @@ mod tests {
     use super::*;
     use crate::tacky::ast as tacky;
 
+    /// Linux output ends with a `.note.GNU-stack` section; macOS doesn't.
+    fn expected_asm_trailer() -> Vec<String> {
+        #[cfg(target_os = "macos")]
+        {
+            Vec::new()
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            vec![
+                String::new(),
+                String::from(".section .note.GNU-stack,\"\",@progbits"),
+            ]
+        }
+    }
+
     #[test]
     fn parse_simple_tacky_program() {
         let tacky_program = tacky::Program::Program(tacky::Function::Function(
             String::from("main"),
             vec![tacky::Instruction::Return(tacky::Value::Constant(2))],
         ));
-        let asm = [
-            "  .globl main",
-            "main:",
-            "  pushq %rbp",
-            "  movq %rsp, %rbp",
-            "  subq $0, %rsp",
-            "  movl $2, %eax",
-            "  movq %rbp, %rsp",
-            "  popq %rbp",
-            "  ret",
-            "",
-            ".section .note.GNU-stack,\"\",@progbits",
+        let symbol = format!("{}main", to_code::SYMBOL_PREFIX);
+        let expected_lines: Vec<String> = vec![
+            format!("  .globl {symbol}"),
+            format!("{symbol}:"),
+            String::from("  pushq %rbp"),
+            String::from("  movq %rsp, %rbp"),
+            String::from("  subq $0, %rsp"),
+            String::from("  movl $2, %eax"),
+            String::from("  movq %rbp, %rsp"),
+            String::from("  popq %rbp"),
+            String::from("  ret"),
         ]
-        .join("\n");
+        .into_iter()
+        .chain(expected_asm_trailer())
+        .collect();
+        let asm = expected_lines.join("\n");
         assert_eq!(
             to_code::asm_program_to_string(tacky_program_to_asm_code(tacky_program)),
             asm + "\n"
@@ -72,28 +89,30 @@ mod tests {
                 tacky::Instruction::Return(tacky::Value::Variable(String::from("unary"), 2)),
             ],
         ));
-        let asm = [
-            "  .globl main",
-            "main:",
-            "  pushq %rbp",
-            "  movq %rsp, %rbp",
-            "  subq $12, %rsp",
-            "  movl $2, -4(%rbp)",
-            "  negl -4(%rbp)",
-            "  movl -4(%rbp), %r10d",
-            "  movl %r10d, -8(%rbp)",
-            "  notl -8(%rbp)",
-            "  movl -8(%rbp), %r10d",
-            "  movl %r10d, -12(%rbp)",
-            "  negl -12(%rbp)",
-            "  movl -12(%rbp), %eax",
-            "  movq %rbp, %rsp",
-            "  popq %rbp",
-            "  ret",
-            "",
-            ".section .note.GNU-stack,\"\",@progbits",
+        let symbol = format!("{}main", to_code::SYMBOL_PREFIX);
+        let expected_lines: Vec<String> = vec![
+            format!("  .globl {symbol}"),
+            format!("{symbol}:"),
+            String::from("  pushq %rbp"),
+            String::from("  movq %rsp, %rbp"),
+            String::from("  subq $12, %rsp"),
+            String::from("  movl $2, -4(%rbp)"),
+            String::from("  negl -4(%rbp)"),
+            String::from("  movl -4(%rbp), %r10d"),
+            String::from("  movl %r10d, -8(%rbp)"),
+            String::from("  notl -8(%rbp)"),
+            String::from("  movl -8(%rbp), %r10d"),
+            String::from("  movl %r10d, -12(%rbp)"),
+            String::from("  negl -12(%rbp)"),
+            String::from("  movl -12(%rbp), %eax"),
+            String::from("  movq %rbp, %rsp"),
+            String::from("  popq %rbp"),
+            String::from("  ret"),
         ]
-        .join("\n");
+        .into_iter()
+        .chain(expected_asm_trailer())
+        .collect();
+        let asm = expected_lines.join("\n");
         assert_eq!(
             to_code::asm_program_to_string(tacky_program_to_asm_code(tacky_program)),
             asm + "\n"

@@ -8,12 +8,11 @@ OUTPUT_ASSEMBLY=0
 # Pass stage flag to compiler
 COMPILER_STEP_FLAG=""
 
-if ! vars=$(getopt -o Sh -l "lex,parse,tacky,codegen,help" -- "$@"); then
-  exit 1
-fi
-for var in $vars
+# Parse options with a portable loop rather than GNU getopt:
+# BSD getopt (macOS) doesn't support long options, GNU getopt does.
+while [ $# -gt 0 ]
 do
-  case "$var" in
+  case "$1" in
     "-S")
       OUTPUT_ASSEMBLY=1
       shift
@@ -23,6 +22,7 @@ do
       exit 1
       ;;
     "--") # marks end of opts. break from loop
+      shift
       break
       ;;
     "--lex")
@@ -41,10 +41,14 @@ do
       COMPILER_STEP_FLAG="--codegen"
       shift
       ;;
-    *)
+    -*)
       echo "Unknown option detected"
       echo $USAGE_STR
       exit 1
+      ;;
+    *)
+      # first positional argument; stop parsing options
+      break
       ;;
   esac
 done
@@ -57,7 +61,7 @@ if [ -z $1 ]; then
 fi
 
 INPUT_FILE=$1
-BASE_PATH=$(echo $INPUT_FILE | sed -E 's/\.\w*$//')
+BASE_PATH=$(echo $INPUT_FILE | sed -E 's/\.[[:alnum:]_]*$//')
 
 # Preprocess input file
 PREPROC_PATH="${BASE_PATH}.i"

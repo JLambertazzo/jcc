@@ -33,3 +33,17 @@ cargo test # runs unit & end-to-end defined in this repository
 * unit tests defined directly in the files
 * `./run-tests.sh` runs the end-to-end tests defined by the book's author
   * testing script is defined in submodule `writing-a-c-compiler-tests`
+
+### Running on macOS
+
+The book's test suite targets x86-64. Codegen emits macOS-specific assembly on
+macOS (underscore-prefixed symbols, no `.note.GNU-stack`) and Linux assembly
+elsewhere, so the same source builds unchanged in CI on both platforms.
+
+On an **Intel** Mac, `./run-tests.sh` works out of the box. On **Apple
+Silicon**, the default toolchain targets arm64, so force x86-64 output (which
+runs under Rosetta) with the helper wrapper:
+
+```bash
+PATH="$PWD/scripts/x86_64-gcc:$PATH" ./run-tests.sh
+```

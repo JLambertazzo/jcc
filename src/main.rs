@@ -14,6 +14,8 @@ struct Cli {
     #[arg(short, long)]
     parse: bool,
     #[arg(short, long)]
+    validate: bool,
+    #[arg(short, long)]
     tacky: bool,
     #[arg(short, long)]
     codegen: bool,
@@ -25,8 +27,8 @@ fn main() {
     let input_path = cli.filepath.as_str();
     let contents = fs::read_to_string(input_path)
         .expect(&format!("Failed to read input file {:?}", input_path));
-    let c_program = c::process_program(contents, cli.lex);
-    if cli.parse {
+    let c_program = c::process_program(contents, cli.lex, cli.parse);
+    if cli.validate {
         process::exit(0);
     }
     let tacky_program = c::to_tacky::translate_program(c_program);

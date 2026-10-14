@@ -33,6 +33,10 @@ do
       COMPILER_STEP_FLAG="--parse"
       shift
       ;;
+    "--validate")
+      COMPILER_STEP_FLAG="--validate"
+      shift
+      ;;
     "--tacky")
       COMPILER_STEP_FLAG="--tacky"
       shift
